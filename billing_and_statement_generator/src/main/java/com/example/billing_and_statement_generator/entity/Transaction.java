@@ -39,9 +39,9 @@ public class Transaction{
     @JoinColumn(name = "card_id", nullable = false)
     private Card card;
 
-//    @ManyToOne
-//    @JoinColumn(name = "cycle_id", nullable = false)
-//    private BillingCycle billingCycle;
+    @ManyToOne
+    @JoinColumn(name = "cycle_id", nullable = false)
+    private BillingCycle billingCycle;
 
     @Column(name = "transaction_date")
     private LocalDate transaction_date;
