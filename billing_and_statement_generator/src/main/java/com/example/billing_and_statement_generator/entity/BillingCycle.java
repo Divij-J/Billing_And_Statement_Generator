@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import java.math.Bigdecimal;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.*;
@@ -25,7 +25,7 @@ public class BillingCycle {
     @Column(name = "cycle_id", nullable = false)
     private UUID cycle_id;
     @ManyToOne
-    @Joincolumn(name = "card_id")
+    @JoinColumn(name = "card_id")
     private Card card;       //FK to cardid
 
     @Column(name = "cycle_start_date")
