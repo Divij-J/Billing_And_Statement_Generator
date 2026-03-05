@@ -43,9 +43,9 @@ public class Card {
     @Column(name = "card_id", nullable = false, unique = true)
     private UUID card_id;
 
-//    @ManyToOne
-//    @JoinColumn(name = "customer_id")
-//    private Customer customer;
+    @ManyToOne
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
     @NotBlank
     @CreditCardNumber
