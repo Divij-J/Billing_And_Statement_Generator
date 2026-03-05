@@ -9,9 +9,6 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 import org.hibernate.validator.constraints.CreditCardNumber;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.UUID;
 
 
@@ -29,7 +26,7 @@ public class Customer {
     @NotBlank
     @Size(min = 2, max = 50)
     @Column(name = "first_name", nullable = false)
-    String firstName;
+    private String firstName;
 
     @NotBlank
     @Size(min = 2, max = 50)
@@ -73,5 +70,5 @@ public class Customer {
     private String zipcode;
 
     @OneToMany(mappedBy = "customer")
-    Private List<Card> cards;
+    private List<Card> cards;
 }
