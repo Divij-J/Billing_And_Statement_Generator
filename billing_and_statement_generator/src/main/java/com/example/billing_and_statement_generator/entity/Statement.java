@@ -2,7 +2,8 @@ package com.example.billing_and_statement_generator.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jarkarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
