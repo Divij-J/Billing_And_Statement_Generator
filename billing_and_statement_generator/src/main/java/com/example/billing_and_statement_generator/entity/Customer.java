@@ -72,6 +72,6 @@ public class Customer {
     @Column(name = "zip_code", nullable = false, length = 5)
     private String zipcode;
 
-    //@OneToMany(mappedBy = "customer")
-    //Private List<Card> cards;
+    @OneToMany(mappedBy = "customer")
+    Private List<Card> cards;
 }

@@ -21,9 +21,9 @@ public class BillingCycle {
     @Id
     @Column(name = "cycle_id", nullable = false)
     private UUID cycle_id;
-    //@ManyToOne
-    //@Joincolumn(name = "card_id")
-    //private Card card;       //FK to cardid
+    @ManyToOne
+    @Joincolumn(name = "card_id")
+    private Card card;       //FK to cardid
 
     @Column(name = "cycle_start_date")
     private LocalDate cycle_start_date;
@@ -58,6 +58,6 @@ public class BillingCycle {
     @Column(name = "cycle_status")
     private String cycle_status;
 
-    //@OneToMany(mappedBy = "BillingCycle")
-    //private  List<Transaction> transactions;
+    @OneToMany(mappedBy = "BillingCycle")
+    private  List<Transaction> transactions;
 }
