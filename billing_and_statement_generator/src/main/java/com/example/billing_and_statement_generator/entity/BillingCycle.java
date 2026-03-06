@@ -61,6 +61,6 @@ public class BillingCycle {
     @Column(name = "cycle_status")
     private String cycle_status;
 
-    @OneToMany(mappedBy = "BillingCycle")
-    private  List<Transaction> transactions;
+    @OneToMany(mappedBy = "billingCycle")
+    private  List<Transaction> transaction;
 }
