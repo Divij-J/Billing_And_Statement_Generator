@@ -47,7 +47,9 @@ public class Customer {
     @Column(name = "phone_number", nullable = false, unique = true,  length = 15)
     private String phoneNumber;
 
-    @Column(name = "phone_type")
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "phone_type", nullable = false)
     private String phonetype;
 
     @NotBlank
@@ -72,4 +74,10 @@ public class Customer {
 
     @OneToMany(mappedBy = "customer")
     private List<Card> cards;
+
+    public enum CardType {
+        Mobile,
+        Home,
+        Work
+    }
 }
