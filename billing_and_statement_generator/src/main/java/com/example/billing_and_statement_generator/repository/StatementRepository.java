@@ -27,7 +27,7 @@ public interface StatementRepository extends JpaRepository<Statement, UUID>{
 
     //Find all statements for a specific card
     List<Statement> findByCard_CardIdAndStatement(
-            UUID cardId;
+            UUID cardId,
             Statement.StatementStatus statementStatus
     );
 }
