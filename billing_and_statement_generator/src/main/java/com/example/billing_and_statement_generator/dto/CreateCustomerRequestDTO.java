@@ -1,7 +1,7 @@
 package com.example.billing_and_statement_generator.dto;
 
-import jakarata.validation.constraints.Email;
-import jakarata.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
