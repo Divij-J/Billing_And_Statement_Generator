@@ -1,6 +1,6 @@
 package com.example.billing_and_statement_generator.repository;
 
-import com.example.billing_and_statement_generator.entity;
+import com.example.billing_and_statement_generator.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,7 +21,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     //Find all payments for a specific card in a specific billing cycle
     List<Payment> findByCard_CardIdAndBillingCycle_CycleId(
-            UUID cardId
+            UUID cardId,
             UUID cycleId
     );
 

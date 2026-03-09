@@ -20,7 +20,7 @@ public class PaymentRequestDTO {
 
     @NotBlank(message = "Amount paid is required")
     @Pattern(
-            regexp = "\\d+(\\.\\d{1,2})?"
+            regexp = "^\\d+(\\.\\d{1,2})?$",
             message = "Amount must be a valid positive number with up to 2 decimal places"
     )
     private String amountPaid;
