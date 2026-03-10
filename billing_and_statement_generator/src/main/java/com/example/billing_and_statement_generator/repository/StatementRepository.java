@@ -12,13 +12,13 @@ import java.util.UUID;
 public interface StatementRepository extends JpaRepository<Statement, UUID>{
 
     //Find statement by billing cycle
-    Optional<Statement> findByBillingCycle_CycleId(UUID cycleId);
+    Optional<Statement> findByBillingCycle_Cycle_id(UUID cycle_id);
 
     //Find all statements for a specific card
-    List<Statement> findByCard_CardIdOrderByStatementDateDesc(UUID cardId);
+    List<Statement> findByCard_Card_idOrderByStatementDateDesc(UUID card_id);
 
     //Check if statement already exists before generating
-    boolean existsByBillingCycle_CycleId(UUID cycleId);
+    boolean existsByBillingCycle_Cycle_id(UUID cycle_id);
 
     //Find statements by status
     List<Statement> findByStatementStatus(
@@ -26,8 +26,8 @@ public interface StatementRepository extends JpaRepository<Statement, UUID>{
     );
 
     //Find all statements for a specific card
-    List<Statement> findByCard_CardIdAndStatement(
-            UUID cardId,
+    List<Statement> findByCard_Card_idAndStatement(
+            UUID card_id,
             Statement.StatementStatus statementStatus
     );
 }
