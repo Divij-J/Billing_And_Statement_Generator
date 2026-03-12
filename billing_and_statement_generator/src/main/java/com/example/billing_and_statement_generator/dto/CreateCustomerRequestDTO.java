@@ -14,7 +14,7 @@ public class CreateCustomerRequestDTO {
     @NotBlank(message = "Last name is required")
     private String lastName;
 
-    private String middleName;
+    private String middleInitial;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
