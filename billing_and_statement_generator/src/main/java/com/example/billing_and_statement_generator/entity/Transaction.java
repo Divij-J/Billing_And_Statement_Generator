@@ -40,7 +40,7 @@ public class Transaction{
     private Card card;
 
     @ManyToOne
-    @JoinColumn(name = "cycle_id", nullable = false)
+    @JoinColumn(name = "cycle_id", nullable = true)
     private BillingCycle billingCycle;
 
     @Column(name = "transaction_date")

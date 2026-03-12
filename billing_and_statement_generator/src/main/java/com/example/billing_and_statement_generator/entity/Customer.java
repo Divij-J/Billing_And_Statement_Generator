@@ -32,7 +32,7 @@ public class Customer {
     @NotBlank
     @Size(min = 2, max = 50)
     @Column(name = "last_name", nullable = false)
-    private String lastNname;
+    private String lastName;
 
     @Size(max = 1)
     @Column(name = "middle_initial")
@@ -50,7 +50,7 @@ public class Customer {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "phone_type", nullable = false)
-    private String phonetype;
+    private PhoneType phonetype;
 
     @NotBlank
     @Column(name = "address_line_1", nullable = false)
@@ -75,7 +75,7 @@ public class Customer {
     @OneToMany(mappedBy = "customer")
     private List<Card> cards;
 
-    public enum CardType {
+    public enum PhoneType {
         Mobile,
         Home,
         Work
