@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
-import java.math.LocalDate;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,5 +37,5 @@ public class BillingCycleResponseDTO{
     private String cycle_status;
 
     // Transaction List
-    private List<TransactionSummaryDTO> transation
+    private List<CreateTransactionResponseDTO> transactions;
 }
