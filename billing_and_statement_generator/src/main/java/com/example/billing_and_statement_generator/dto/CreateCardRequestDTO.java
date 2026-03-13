@@ -16,9 +16,6 @@ public class CreateCardRequestDTO {
     @NotNull
     private UUID customerId;
 
-    @NotNull
-    private UUID cardId;
-
     @NotBlank
     @Size(min = 12, max = 19)
     @Pattern(regexp = "^[0-9]+$", message = "cardNumber must be digits only")
@@ -37,8 +34,6 @@ public class CreateCardRequestDTO {
     @NotNull
     @Future
     private LocalDate expiryDate;
-
-    private boolean isActive;
 
     @NotNull
     @DecimalMin("100.00")
