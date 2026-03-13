@@ -20,12 +20,12 @@ public class CreateCardResponseDTO {
     private LocalDate cardIssueDate;
     private LocalDate expiryDate;
     private boolean isActive;
+    private BigDecimal cardBalance;
     private BigDecimal creditLimit;
     private BigDecimal annualInterestRate;
     private LocalDate billingCycleDate;
     private BigDecimal lateFeeAmount;
     private BigDecimal cashAdvanceFeeRate;
-    private String securityCode;
     private BigDecimal annualMembershipFee;
     private BigDecimal cashAdvanceLimit;
 }

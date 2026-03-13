@@ -13,11 +13,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class CreateTransactionRequestDTO {
-
     @NotNull
     private UUID cardId;
-
-    private UUID transactionId;
 
     @NotNull
     @PastOrPresent
@@ -34,8 +31,4 @@ public class CreateTransactionRequestDTO {
 
     @NotNull
     private transactionType type;
-
-    @NotNull
-    private Status status;
-
-    }
+}
