@@ -9,9 +9,11 @@ version = '0.0.1-SNAPSHOT'
 description = 'Demo project for Spring Boot'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(25)
-	}
+	/*toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}*/
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 configurations {
@@ -32,12 +34,13 @@ dependencies {
 
      // MapStruct
      implementation 'org.mapstruct:mapstruct:1.6.3'
-     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+     /*annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'*/
 
      // Swagger
      implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
 
+     //Lombok
      compileOnly 'org.projectlombok:lombok'
      runtimeOnly 'org.postgresql:postgresql'
      annotationProcessor 'org.projectlombok:lombok'

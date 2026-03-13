@@ -9,5 +9,5 @@ public class BillingAndStatementGeneratorApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(BillingAndStatementGeneratorApplication.class, args);
 	}
-
 }
+
