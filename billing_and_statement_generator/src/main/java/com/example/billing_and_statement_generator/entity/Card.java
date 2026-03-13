@@ -20,28 +20,9 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PUBLIC, force = true)
 @Builder
 public class Card {
-    /*  Columns - varnames
-        Card ID (PK) - card_id
-        Customer ID (FK) - customer_id
-        Card Number - card_number
-        Card Type - card_type
-        Card Holder Name - card_holder_name
-        Card Issue Date - card_issue_date
-        Expiry Date - expiry_date
-        isActive - is_active
-        Credit Limit - credit_limit
-        Annual Interest Rate - annual_interest_rate
-        Billing Cycle Date - billing_cycle_date
-        Late Fee Amount - late_fee_amount
-        Cash Advance Fee Rate - cash_advance_fee_rate
-        Security Code - security_code
-        Annual Membership Fee - annual_membership_fee
-        Cash Advance Limit - cash_advance_limit
-    */
-
     @Id
     @Column(name = "card_id", nullable = false, unique = true)
-    private UUID card_id;
+    private UUID cardId;
 
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
@@ -50,12 +31,12 @@ public class Card {
     @NotBlank
     @CreditCardNumber
     @Column(name = "card_number", nullable = false, unique = true, length = 16)
-    private String card_number;
+    private String cardNumber;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "card_type", nullable = false)
-    private CardType card_type;
+    private CardType cardType;
 
     @NotBlank
     @Column(name = "card_holder_name", nullable = false)
@@ -63,15 +44,20 @@ public class Card {
 
     @NotNull
     @Column(name = "card_issue_date", nullable = false)
-    private LocalDate card_issue_date;
+    private LocalDate cardIssueDate;
 
     @NotNull
     @Column(name = "expiry_date", nullable = false, length = 6)
-    private LocalDate expiry_date; //YYYYMM
+    private LocalDate expiryDate; //YYYYMM
 
     @NotNull
     @Column(name = "isActive", nullable = false)
-    private boolean is_active;
+    private boolean isActive;
+
+    @NotNull
+    @PositiveOrZero
+    @Column(name = "card_balance", nullable = false)
+    private BigDecimal cardBalance;
 
     @NotNull
     @PositiveOrZero
@@ -79,18 +65,18 @@ public class Card {
     private BigDecimal creditLimit;
 
     @Column(name = "annual_interest_rate")
-    private BigDecimal annual_interest_rate;
+    private BigDecimal annualInterestRate;
 
     @Column(name = "billing_cycle_date")
-    private LocalDate billing_cycle_date;
+    private LocalDate billingCycleDate;
 
     @Column(name = "late_fee_amount")
     @PositiveOrZero
-    private BigDecimal late_fee_amount;
+    private BigDecimal lateFeeAmount;
 
     @Column(name = "cash_advance_fee_rate")
     @PositiveOrZero
-    private BigDecimal cash_advance_fee_rate;
+    private BigDecimal cashAdvanceFeeRate;
 
     @NotBlank(message = "CVV must be 3 digits")
     @Column(name = "security_code", nullable = false, length = 3)
@@ -98,11 +84,11 @@ public class Card {
 
     @Column(name = "annual_membership_fee")
     @PositiveOrZero
-    private BigDecimal annual_membership_fee;
+    private BigDecimal annualMembershipFee;
 
     @Column(name = "cash_advance_limit")
     @PositiveOrZero
-    private BigDecimal cash_advance_limit;
+    private BigDecimal cashAdvanceLimit;
 
     //CARD TYPE ENUM
     public enum CardType {

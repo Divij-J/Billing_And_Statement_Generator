@@ -20,20 +20,9 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PUBLIC, force = true)
 @Builder
 public class Transaction{
-    /*
-        Columns - varnames
-        Transaction ID - transaction_id
-        Card ID - card_id
-        Cycle ID - cycle_id
-        Transaction Date - transaction_date
-        Transaction Type (Purchase/Cash Advance/Payment) - transaction_type
-        Amount - amount
-        Merchant Name - merchant_name
-        Status (Sent/Pending/Declined/Reverted) - status
-    * */
     @Id
     @Column(name = "transaction_id")
-    private UUID transaction_id;
+    private UUID transactionId;
 
     @ManyToOne
     @JoinColumn(name = "card_id", nullable = false)
@@ -44,11 +33,11 @@ public class Transaction{
     private BillingCycle billingCycle;
 
     @Column(name = "transaction_date")
-    private LocalDate transaction_date;
+    private LocalDate transactionDate;
 
     @Column(name = "transaction_type")
     @NotNull
-    private transactionType transaction_type;
+    private transactionType transactionType;
 
     @Column(name = "amount")
     @PositiveOrZero
@@ -57,7 +46,7 @@ public class Transaction{
 
     @Column(name = "merchant_name")
     @NotBlank
-    private String merchant_name;
+    private String merchantName;
 
     @Column(name = "status")
     @NotNull
