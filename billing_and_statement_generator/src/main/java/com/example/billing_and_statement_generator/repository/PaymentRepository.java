@@ -14,15 +14,18 @@ import java.util.UUID;
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     //Find all payments for a specific card
-    List<Payment> findByCard_Card_idOrderByPaymentDateDesc(UUID card_id);
+    @Query("SELECT p FROM Payment p WHERE p.card.card_id = :cardId ORDER BY p.paymentDate DESC")
+    List<Payment> findByCardId(@Param("cardId") UUID cardId);
 
     //Find all payments for a specific billing cycle
-    List<Payment> findByBillingCycle_Cycle_id(UUID cycle_id);
+    @Query("SELECT p FROM Payment p WHERE p.billingCycle.cycle_id = :cycleId")
+    List<Payment> findByCycleId(@Param("cycleId") UUID cycleId);
 
     //Find all payments for a specific card in a specific billing cycle
-    List<Payment> findByCard_Card_idAndBillingCycle_Cycle_id(
-            UUID card_id,
-            UUID cycle_id
+    @Query("SELECT p FROM Payment p WHERE p.card.card_id = :cardId AND p.billingCycle.cycle_id = :cycleId")
+    List<Payment> findByCardIdAndCycleId(
+            @Param("cardId") UUID cardId,
+            @Param("cycleId") UUID cycleId
     );
 
     //Find payments by status
@@ -30,7 +33,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     //Calculate total amount paid for a billing cycle
     @Query("SELECT COALESCE(SUM(p.amountPaid), 0) " +
-        "FROM Payment p" +
+        "FROM Payment p " +
         "WHERE p.billingCycle.cycle_id = :cycleId "  +
         "AND p.paymentStatus = 'SUCCESS'")
     BigDecimal findTotalPaidByCycleId(@Param("cycleId") UUID cycleId);

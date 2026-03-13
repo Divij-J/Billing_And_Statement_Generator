@@ -22,7 +22,7 @@ public class PaymentMapper {
         return Payment.builder()
                 .paymentId(UUID.randomUUID())
                 .card(card)
-                .billingCyle(billingCycle)
+                .billingCycle(billingCycle)
                 .amountPaid(new BigDecimal(dto.getAmountPaid()))
                 .paymentDate(LocalDateTime.now())
                 .paymentType(Payment.PaymentType.valueOf(dto.getPaymentType().toUpperCase()))
@@ -30,7 +30,7 @@ public class PaymentMapper {
                 .build();
     }
     public PaymentResponseDTO toResponseDTO(Payment payment) {
-        return PaymentResponseDTO.build()
+        return PaymentResponseDTO.builder()
                 .paymentId(payment.getPaymentId().toString())
                 .cycleId(payment.getBillingCycle().getCycle_id().toString())
                 .cardId(payment.getCard().getCard_id().toString())
