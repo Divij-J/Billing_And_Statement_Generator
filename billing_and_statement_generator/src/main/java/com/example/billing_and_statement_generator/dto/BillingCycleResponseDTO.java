@@ -21,20 +21,21 @@ public class BillingCycleResponseDTO{
     private UUID cardId;
 
     //Dates
-    private LocalDate cycle_start_date;
-    private LocalDate cycle_end_date;
-    private LocalDate due_date;
+    private LocalDate cycleStartDate;
+    private LocalDate cycleEndDate;
+    private LocalDate dueDate;
 
-    private BigDecimal credit_limit;
-    private BigDecimal previous_balance;
-    private BigDecimal total_purchases;
-    private BigDecimal total_cash_advance;
-    private BigDecimal total_interest;
-    private BigDecimal total_outstanding;
-    private BigDecimal minimum_due;
+    //Financial Figures
+    private BigDecimal creditLimit;
+    private BigDecimal previousBalance;
+    private BigDecimal totalPurchases;
+    private BigDecimal totalCashAdvance;
+    private BigDecimal totalInterest;
+    private BigDecimal totalOutstanding;
+    private BigDecimal minimumDue;
     private BigDecimal creditLimit;
     //Status
-    private String cycle_status;
+    private String cycleStatus;
 
     // Transaction List
     private List<CreateTransactionResponseDTO> transactions;
