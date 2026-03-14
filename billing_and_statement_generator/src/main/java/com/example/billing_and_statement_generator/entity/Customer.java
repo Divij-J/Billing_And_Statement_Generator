@@ -50,7 +50,7 @@ public class Customer {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "phone_type", nullable = false)
-    private PhoneType phonetype;
+    private PhoneType phoneType;
 
     @NotBlank
     @Column(name = "address_line_1", nullable = false)
