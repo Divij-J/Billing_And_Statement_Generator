@@ -2,13 +2,14 @@ package com.example.billing_and_statement_generator.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.util.UUID;
 
 @Getter
 @Setter
 
 public class CustomerResponseDTO {
 
-    private String customerId;
+    private UUID customerId;
     private String firstName;
     private String lastName;
     private String middleInitial;
