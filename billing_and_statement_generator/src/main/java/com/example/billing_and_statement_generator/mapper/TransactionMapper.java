@@ -17,7 +17,7 @@ public interface TransactionMapper {
         @Mapping(target = "billingCycle", ignore = true),
         @Mapping(target = "status", ignore = true),
 
-        @Mapping(target = "card", source = "cardId", qualifiedByName = "toCard"),
+        @Mapping(target = "card.cardId", source = "cardId"),
         @Mapping(target = "transactionType", source = "type")
     })
     Transaction toEntity(CreateTransactionRequestDTO dto);
@@ -25,7 +25,7 @@ public interface TransactionMapper {
     // Entity to DTO (Response DTO)
     @Mappings({
         @Mapping(target = "cardId", source = "card.cardId"),
-        @Mapping(target = "cycleId", source = "billingCycle.cycle_id"),
+        @Mapping(target = "cycleId", source = "billingCycle.cycleId"),
         @Mapping(target = "type", source = "transactionType")
     })
     CreateTransactionResponseDTO toResponse(Transaction transaction);

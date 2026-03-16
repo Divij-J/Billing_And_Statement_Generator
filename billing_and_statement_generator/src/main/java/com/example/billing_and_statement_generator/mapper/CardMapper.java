@@ -5,8 +5,6 @@ import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
 import com.example.billing_and_statement_generator.entity.*;
 import org.mapstruct.*;
 
-import java.util.UUID;
-
 @Mapper(componentModel = "spring")
 public interface CardMapper {
     // DTO to Entity (Create Request DTO)
@@ -16,23 +14,13 @@ public interface CardMapper {
             @Mapping(target = "cardBalance", ignore = true),
             @Mapping(target = "isActive", ignore = true),
 
-            @Mapping(target = "customer", source = "customerId", qualifiedByName = "toCustomer")
+            @Mapping(target = "customer.customerId", source = "customerId")
     })
     Card toEntity(CreateCardRequestDTO dto);
 
     // Entity to DTO (Response DTO)
     @Mappings({
-            @Mapping(target = "customer", source = "customer.customerId")
+            @Mapping(target = "customerId", source = "customer.customerId")
     })
     CreateCardResponseDTO toResponse(Card card);
-
-    // Helper method to make a customer with only its ID, ensures mapper does not interact with DB
-    @Named("toCustomer")
-    default Customer toCustomer(UUID id){
-        if(id == null)
-            return null;
-        return Customer.builder()
-                .customerId(id)
-                .build();
-    }
 }
