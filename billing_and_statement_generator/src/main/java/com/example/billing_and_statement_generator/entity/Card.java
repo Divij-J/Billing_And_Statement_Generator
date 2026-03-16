@@ -47,11 +47,11 @@ public class Card {
     private LocalDate cardIssueDate;
 
     @NotNull
-    @Column(name = "expiry_date", nullable = false, length = 6)
-    private LocalDate expiryDate; //YYYYMM
+    @Column(name = "expiry_date", nullable = false)
+    private LocalDate expiryDate;
 
     @NotNull
-    @Column(name = "isActive", nullable = false)
+    @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
     @NotNull
