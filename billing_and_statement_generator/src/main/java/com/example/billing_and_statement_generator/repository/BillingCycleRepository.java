@@ -8,9 +8,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-
 public interface BillingCycleRepository extends JpaRepository<BillingCycle, UUID> {
-    List<BillingCycle> findByCardId(UUID cardId);
-    Optional<BillingCycle> findTopByCard_CardIdOrderByCycleEndDateDesc(UUID cardId);
-    List<BillingCycle> findbyCard_CardIdAndCycleStatus(UUID cardId, String cycleStatus);
+
+          List<BillingCycle> findByCardCardId(UUID cardId);
+
+          Optional<BillingCycle> findTopByCardCardIdOrderByCycleEndDateDesc(UUID cardId);
+
+          List<BillingCycle> findByCardCardIdAndCycleStatus(UUID cardId, String cycleStatus);
 }
