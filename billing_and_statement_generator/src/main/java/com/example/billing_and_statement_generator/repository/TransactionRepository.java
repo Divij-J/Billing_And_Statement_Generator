@@ -11,13 +11,13 @@ import java.util.UUID;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
     // find transactions by Card ID
-    List<Transaction> findByCardCardID(UUID cardId);
+    List<Transaction> findByCardCardId(UUID cardId);
 
     // find transactions by Billing Cycle ID
-    List<Transaction> findByBillingCycleCycle_id(UUID cycleId);
+    List<Transaction> findByBillingCycleCycleId(UUID cycleId);
 
     // find transactions by Card and Billing Cycle IDs
-    List<Transaction> findByCardCardIdAndBillingCycle_id(UUID cardId, UUID cycleId);
+    List<Transaction> findByCardCardIdAndBillingCycleCycleId(UUID cardId, UUID cycleId);
 
     // retrieves transactions between a specific set of dates
     List<Transaction> findByCardCardIdAndTransactionDateBetween(UUID cardId, LocalDate startDate, LocalDate endDate);
