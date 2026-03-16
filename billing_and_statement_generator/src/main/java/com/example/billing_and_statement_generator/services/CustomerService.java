@@ -75,16 +75,17 @@ public class CustomerService {
 
   public CustomerResponseDTO updateCustomer(UUID customerId,
                        CreateCustomerRequestDTO request) {
-    log.info("PUT /customers/{} - updating customer", customerId);
+    log.info("customers/{} - updating customer", customerId);
     try {
       Customer customer = customerRepository.findById(customerId)
           .orElseThrow(() -> new EntityNotFoundException(
                                 "Customer not found with ID: " + customerId));
 
-      // MapStruct updates only non-ignored fields on existing entity
-      customerMapper.updateEntityFromRequest(request, customer);
+      // MapStruct updates fields and returns existing entity
 
-      Customer updated = customerRepository.save(customer);
+
+      Customer updated = customerRepository.save(
+              customerMapper.updateEntityFromRequest(request, customer););
       log.info("customers/{} - successfully updated customer", customerId);
       return customerMapper.toDTO(updated);
 

@@ -33,10 +33,10 @@ public class BillingCycleResponseDTO{
     private BigDecimal totalInterest;
     private BigDecimal totalOutstanding;
     private BigDecimal minimumDue;
-    private BigDecimal creditLimit;
+    private BigDecimal cycleStatus;
     //Status
     private String cycleStatus;
 
     // Transaction List
-    private List<CreateTransactionResponseDTO> transactions;
+    private List<CreateTransactionResponseDTO> transaction;
 }
