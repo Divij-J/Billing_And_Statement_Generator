@@ -12,7 +12,7 @@ public interface CardMapper {
             // service will set these (the ignore mappings)
             @Mapping(target = "cardId", ignore = true),
             @Mapping(target = "cardBalance", ignore = true),
-            @Mapping(target = "isActive", ignore = true),
+            @Mapping(target = "active", ignore = true),
 
             @Mapping(target = "customer.customerId", source = "customerId")
     })
