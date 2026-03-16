@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
-import org.hibernate.validator.constraints.CreditCardNumber;
-import org.springframework.cglib.core.Local;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,7 +27,7 @@ public class Transaction{
     private Card card;
 
     @ManyToOne
-    @JoinColumn(name = "cycle_id", nullable = true)
+    @JoinColumn(name = "cycle_id")
     private BillingCycle billingCycle;
 
     @Column(name = "transaction_date")
