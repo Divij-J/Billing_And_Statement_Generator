@@ -41,14 +41,22 @@ public class Statement {
     private LocalDate dueDate;
 
     @NotNull
-    @PositiveOrZero
-    @Column(name = "previous_balance", nullable = false, precision = 15, scale = 2)
-    private BigDecimal previousBalance;
+    @Column(name = "billing_start_date", nullable = false)
+    private LocalDate billingStartDate;
+
+    @NotNull
+    @Column(name = "billing_end_date", nullable = false)
+    private LocalDate billingEndDate;
 
     @NotNull
     @PositiveOrZero
-    @Column(name = "new_balance", nullable = false, precision = 15, scale = 2)
-    private BigDecimal newBalance;
+    @Column(name = "statement_balance", nullable = false, precision = 15, scale = 2)
+    private BigDecimal statementBalance;
+
+    @NotNull
+    @PositiveOrZero
+    @Column(name = "remaining_statement_balance", nullable = false, precision = 15, scale = 2)
+    private BigDecimal remainingStatementBalance;
 
     @NotNull
     @PositiveOrZero

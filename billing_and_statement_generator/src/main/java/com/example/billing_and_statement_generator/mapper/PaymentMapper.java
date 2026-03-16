@@ -32,8 +32,8 @@ public class PaymentMapper {
     public PaymentResponseDTO toResponseDTO(Payment payment) {
         return PaymentResponseDTO.builder()
                 .paymentId(payment.getPaymentId().toString())
-                .cycleId(payment.getBillingCycle().getCycle_id().toString())
-                .cardId(payment.getCard().getCard_id().toString())
+                .cycleId(payment.getBillingCycle().getCycleId().toString())
+                .cardId(payment.getCard().getCardId().toString())
                 .amountPaid(payment.getAmountPaid().toString())
                 .paymentDate(payment.getPaymentDate().toString())
                 .paymentType(payment.getPaymentType().toString())
@@ -43,8 +43,8 @@ public class PaymentMapper {
     public RetrievePaymentHistoryDTO toHistoryDTO(Payment payment) {
         return RetrievePaymentHistoryDTO.builder()
                 .paymentId(payment.getPaymentId().toString())
-                .cycleId(payment.getBillingCycle().getCycle_id().toString())
-                .cardId(payment.getCard().getCard_id().toString())
+                .cycleId(payment.getBillingCycle().getCycleId().toString())
+                .cardId(payment.getCard().getCardId().toString())
                 .amountPaid(payment.getAmountPaid().toString())
                 .paymentDate(payment.getPaymentDate().toString())
                 .paymentType(payment.getPaymentType().toString())

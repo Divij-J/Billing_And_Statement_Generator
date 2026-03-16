@@ -16,8 +16,10 @@ public class RetrieveStatementResponseDTO {
     private String cardId;
     private String statementDate;
     private String dueDate;
-    private String previousBalance;
-    private String newBalance;
+    private String billingStartDate;
+    private String billingEndDate;
+    private String statementBalance;
+    private String remainingStatementBalance;
     private String minimumDue;
     private String totalInterest;
     private String totalOutstanding;
