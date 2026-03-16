@@ -52,7 +52,7 @@ public class Card {
 
     @NotNull
     @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    private boolean active;
 
     @NotNull
     @PositiveOrZero

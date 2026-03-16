@@ -19,7 +19,7 @@ public class CreateCardResponseDTO {
     private String cardHolderName;
     private LocalDate cardIssueDate;
     private LocalDate expiryDate;
-    private boolean isActive;
+    private boolean active;
     private BigDecimal cardBalance;
     private BigDecimal creditLimit;
     private BigDecimal annualInterestRate;
