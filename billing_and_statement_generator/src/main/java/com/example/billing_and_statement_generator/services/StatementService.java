@@ -111,8 +111,6 @@ public class StatementService {
         Statement statement = statementMapper.toEntity(
                 card,
                 billingCycle,
-                statementDate,
-                dueDate,
                 statementBalance,
                 remainingStatementBalance,
                 minimumDue == null ? BigDecimal.ZERO : minimumDue,

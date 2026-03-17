@@ -25,9 +25,17 @@ public class PaymentMapper {
                 .billingCycle(billingCycle)
                 .amountPaid(new BigDecimal(dto.getAmountPaid()))
                 .paymentDate(LocalDateTime.now())
-                .paymentType(Payment.PaymentType.valueOf(dto.getPaymentType().toUpperCase()))
+                .paymentType(parsePaymentType(dto.getPaymentType()))
                 .paymentStatus(Payment.PaymentStatus.PENDING)
                 .build();
+    }
+    private Payment.PaymentType parsePaymentType(String type) {
+        try {
+            return Payment.PaymentType.valueOf(type.toUpperCase().trim());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(
+                    "Invalid payment type: " + type + ". Valid values are: MINIMUM, FULL, PARTIAL");
+        }
     }
     public PaymentResponseDTO toResponseDTO(Payment payment) {
         return PaymentResponseDTO.builder()
