@@ -1,4 +1,4 @@
-package com.example.billing_and_statement_generator.service;
+package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
