@@ -17,8 +17,6 @@ public class StatementMapper {
     public Statement toEntity(
             Card card,
             BillingCycle billingCycle,
-            LocalDate statementDate,
-            LocalDate dueDate,
             BigDecimal statementBalance,
             BigDecimal remainingStatementBalance,
             BigDecimal minimumDue,
@@ -35,8 +33,8 @@ public class StatementMapper {
                 .billingCycle(billingCycle)
 
                 // Use the provided dates
-                .statementDate(statementDate)
-                .dueDate(dueDate)
+                .statementDate(LocalDate.now())
+                .dueDate(billingCycle.getDueDate())
 
                 // These align with the cycle (source of truth)
                 .billingStartDate(billingCycle.getCycleStartDate())
