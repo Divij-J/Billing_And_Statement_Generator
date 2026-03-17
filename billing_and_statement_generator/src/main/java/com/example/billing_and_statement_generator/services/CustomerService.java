@@ -85,7 +85,7 @@ public class CustomerService {
 
 
       Customer updated = customerRepository.save(
-              customerMapper.updateEntityFromRequest(request, customer););
+              customerMapper.updateEntityFromRequest(request, customer));
       log.info("customers/{} - successfully updated customer", customerId);
       return customerMapper.toDTO(updated);
 
