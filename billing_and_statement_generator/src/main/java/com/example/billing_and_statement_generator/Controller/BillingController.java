@@ -1,12 +1,12 @@
-packagecom.example.billing_and_statement_generator.Controller;
+package com.example.billing_and_statement_generator.Controller;
 
 import com.example.billing_and_statement_generator.dto.BillingCycleResponseDTO;
 import com.example.billing_and_statement_generator.service.BillingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-importorg.springframework.web.bind.annotation.*;
-importjava.util.UUID;
+import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
