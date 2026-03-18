@@ -10,7 +10,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface CustomerMapper {
 
-    @Mapping(source = "phoneType", target = "phoneType")
+    @Mapping(source = "phoneType", target = "phoneType", qualifiedByName = "phoneTypeToString")
     CustomerResponseDTO toDTO(Customer customer);
 
     @Mapping(target = "customerId", ignore = true)
@@ -19,4 +19,4 @@ public interface CustomerMapper {
     Customer updateEntityFromRequest(
             CreateCustomerRequestDTO request,
             @MappingTarget Customer customer);
-}
+}s

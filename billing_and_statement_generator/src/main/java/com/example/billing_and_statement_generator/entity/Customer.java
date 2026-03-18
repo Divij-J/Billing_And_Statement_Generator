@@ -22,6 +22,7 @@ import java.util.UUID;
 public class Customer {
     @Id
     @Column(name = "customer_id", nullable = false)
+    @GeneratedValue(stratagy = GenerationType.Auto)
     private UUID customerId;
 
     @NotBlank
@@ -76,8 +77,8 @@ public class Customer {
     private List<Card> cards;
 
     public enum PhoneType {
-        Mobile,
-        Home,
-        Work
+        MOBILE,
+        HOME,
+        WORK
     }
 }
