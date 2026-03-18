@@ -21,4 +21,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     // retrieves transactions between a specific set of dates
     List<Transaction> findByCardCardIdAndTransactionDateBetween(UUID cardId, LocalDate startDate, LocalDate endDate);
+
+    List<Transaction> findByCardCardIdAndBillingCycleIsNull(UUID cardId);
 }

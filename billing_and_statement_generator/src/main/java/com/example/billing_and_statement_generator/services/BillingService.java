@@ -1,4 +1,4 @@
-package com.example.billing_and_statement_generator.service;
+package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.BillingCycleResponseDTO;
 import com.example.billing_and_statement_generator.dto.CreateTransactionResponseDTO;
@@ -55,7 +55,6 @@ public class BillingService {
 
       // Previous balance carried forward
       BigDecimal previousBalance = lastCycleOpt
-          .filter(c -> "OPEN".equals(c.getCycleStatus()))
           .map(BillingCycle::getTotalOutstanding)
           .orElse(BigDecimal.ZERO);
 
@@ -89,7 +88,8 @@ public class BillingService {
       // Late fee if previous cycle still unpaid (OPEN status)
       BigDecimal lateFee = BigDecimal.ZERO;
       if (lastCycleOpt.isPresent() &&
-        "OPEN".equals(lastCycleOpt.get().getCycleStatus())) {
+        "OPEN".equals(lastCycleOpt.get().getCycleStatus())
+        && lastCycleOpt.get().getDueDtae().isBefore(LocalDate.now){
         lateFee = card.getLateFeeAmount() != null
             ? card.getLateFeeAmount()
             : new BigDecimal("50.00");

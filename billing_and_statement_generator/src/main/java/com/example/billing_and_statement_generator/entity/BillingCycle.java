@@ -10,8 +10,6 @@ import java.util.List;
 import lombok.*;
 import org.hibernate.validator.constraints.CreditCardNumber;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.UUID;
 @Entity
 @Table(name="billing_cycle")
@@ -63,5 +61,5 @@ public class BillingCycle {
     private String cycleStatus;
 
     @OneToMany(mappedBy = "billingCycle")
-    private  List<Transaction> transaction;
+    private  List<Transaction> transactions;
 }
