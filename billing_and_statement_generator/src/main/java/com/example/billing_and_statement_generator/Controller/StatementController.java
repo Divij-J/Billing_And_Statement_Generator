@@ -3,7 +3,7 @@ package com.example.billing_and_statement_generator.Controller;
 import com.example.billing_and_statement_generator.dto.GenerateStatementRequestDTO;
 import com.example.billing_and_statement_generator.dto.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.RetrieveStatementResponseDTO;
-import com.example.billing_and_statement_generator.service.StatementService;
+import com.example.billing_and_statement_generator.services.StatementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
