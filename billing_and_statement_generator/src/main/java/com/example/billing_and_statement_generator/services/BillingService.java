@@ -88,8 +88,8 @@ public class BillingService {
       // Late fee if previous cycle still unpaid (OPEN status)
       BigDecimal lateFee = BigDecimal.ZERO;
       if (lastCycleOpt.isPresent() &&
-        "OPEN".equals(lastCycleOpt.get().getCycleStatus())
-        && lastCycleOpt.get().getDueDtae().isBefore(LocalDate.now){
+        "OPEN".equals(lastCycleOpt.get().getCycleStatus()) &&
+         lastCycleOpt.get().getDueDtae().isBefore(LocalDate.now())){
         lateFee = card.getLateFeeAmount() != null
             ? card.getLateFeeAmount()
             : new BigDecimal("50.00");

@@ -1,7 +1,7 @@
 package com.example.billing_and_statement_generator.Controller;
 
 import com.example.billing_and_statement_generator.dto.BillingCycleResponseDTO;
-import com.example.billing_and_statement_generator.servicess.BillingService;
+import com.example.billing_and_statement_generator.services.BillingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

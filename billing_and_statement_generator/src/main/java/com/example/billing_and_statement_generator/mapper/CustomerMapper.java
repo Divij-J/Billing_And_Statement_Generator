@@ -19,4 +19,9 @@ public interface CustomerMapper {
     Customer updateEntityFromRequest(
             CreateCustomerRequestDTO request,
             @MappingTarget Customer customer);
-}s
+
+    @Named("phoneTypeToString")
+    default String phoneTypeToString(Customer.PhoneType phoneType){
+        return phoneType !=null ? phoneType.name() : null;
+    }
+}

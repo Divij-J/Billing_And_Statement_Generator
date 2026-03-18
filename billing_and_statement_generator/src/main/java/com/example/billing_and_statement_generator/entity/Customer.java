@@ -22,7 +22,7 @@ import java.util.UUID;
 public class Customer {
     @Id
     @Column(name = "customer_id", nullable = false)
-    @GeneratedValue(stratagy = GenerationType.Auto)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID customerId;
 
     @NotBlank
