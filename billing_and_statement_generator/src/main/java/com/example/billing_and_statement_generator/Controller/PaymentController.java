@@ -3,7 +3,7 @@ package com.example.billing_and_statement_generator.Controller;
 import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
 import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO;
-import com.example.billing_and_statement_generator.service.PaymentService;
+import com.example.billing_and_statement_generator.services.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
