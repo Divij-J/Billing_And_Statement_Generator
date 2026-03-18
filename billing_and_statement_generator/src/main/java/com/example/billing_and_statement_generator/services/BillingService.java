@@ -89,7 +89,7 @@ public class BillingService {
       BigDecimal lateFee = BigDecimal.ZERO;
       if (lastCycleOpt.isPresent() &&
         "OPEN".equals(lastCycleOpt.get().getCycleStatus()) &&
-         lastCycleOpt.get().getDueDtae().isBefore(LocalDate.now())){
+         lastCycleOpt.get().getDueDate().isBefore(LocalDate.now())){
         lateFee = card.getLateFeeAmount() != null
             ? card.getLateFeeAmount()
             : new BigDecimal("50.00");
