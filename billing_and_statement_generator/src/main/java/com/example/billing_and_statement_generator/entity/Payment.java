@@ -51,6 +51,10 @@ public class Payment {
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
 
+    @Column(name = "payment_method")
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
     //PAYMENT TYPE ENUM
     public enum PaymentType {
         MINIMUM,
@@ -63,5 +67,12 @@ public class Payment {
         PENDING,
         SUCCESS,
         FAILED
+    }
+
+    //PAYMENT METHOD ENUM
+    public enum PaymentMethod {
+        BANK_TRANSFER,
+        CHECK,
+        ONLINE
     }
 }
