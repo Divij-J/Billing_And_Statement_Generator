@@ -6,6 +6,8 @@ import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;
+import com.example.billing_and_statement_generator.dto.v1.PaymentRequestV1DTO;
+import com.example.billing_and_statement_generator.dto.v1.PaymentResponseV1DTO;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -58,5 +60,38 @@ public class PaymentMapper {
                 .paymentType(payment.getPaymentType().toString())
                 .paymentStatus(payment.getPaymentStatus().toString())
                 .build();
+    }
+    public Payment toEntityV1(PaymentRequestV1DTO dto, Card card, BillingCycle billingCycle) {
+        Payment payment = Payment.builder()
+                .paymentId(UUID.randomUUID())
+                .card(card)
+                .billingCycle(billingCycle)
+                .amountPaid(new BigDecimal(dto.getAmountPaid()))
+                .paymentDate(LocalDateTime.now())
+                .paymentType(parsePaymentType(dto.getPaymentType()))
+                .paymentStatus(Payment.PaymentStatus.PENDING)
+                .paymentMethod(dto.getPaymentMethod() != null ? parsePaymentMethod(dto.getPaymentMethod()) : null)
+                .build();
+        return payment;
+    }
+    public PaymentResponseV1DTO toResponseV1DTO(Payment payment) {
+        return PaymentResponseV1DTO.builder()
+                .paymentId(payment.getPaymentId().toString())
+                .cycleId(payment.getBillingCycle().getCycleId().toString())
+                .cardId(payment.getCard().getCardId().toString())
+                .amountPaid(payment.getAmountPaid().toString())
+                .paymentDate(payment.getPaymentDate().toString())
+                .paymentType(payment.getPaymentType().toString())
+                .paymentStatus(payment.getPaymentStatus().toString())
+                .paymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().toString() : null)
+                .build();
+    }
+    private Payment.PaymentMethod parsePaymentMethod(String method) {
+        try {
+            return Payment.PaymentMethod.valueOf(method.toUpperCase().trim());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(
+                    "Invalid payment method: " + method + ". Valid values are: BANK_TRANSFER, CHECK, ONLINE");
+        }
     }
 }
