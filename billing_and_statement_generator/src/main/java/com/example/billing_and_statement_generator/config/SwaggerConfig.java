@@ -14,6 +14,7 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
 
         String bearerAuth = "bearerAuth";
+        String basicAuth = "basicAuth";
 
         return new OpenAPI().info(new Info()
                         .title("Billing and Statement Generator API")
@@ -24,7 +25,11 @@ public class SwaggerConfig {
                                 .name(bearerAuth)
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
-                                .bearerFormat("JWT")));
+                                .bearerFormat("JWT"))
+                        .addSecuritySchemes(basicAuth, new SecurityScheme()
+                                .name(basicAuth)
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("basic")));
 
     }
 }
