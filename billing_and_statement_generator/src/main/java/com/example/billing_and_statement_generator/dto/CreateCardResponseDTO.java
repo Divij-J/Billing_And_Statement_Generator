@@ -21,11 +21,14 @@ public class CreateCardResponseDTO {
     private LocalDate expiryDate;
     private boolean active;
     private BigDecimal cardBalance;
+    private BigDecimal cashAdvanceBalance;
     private BigDecimal creditLimit;
     private BigDecimal annualInterestRate;
+    private BigDecimal cashAdvanceAPR;
     private LocalDate billingCycleDate;
     private BigDecimal lateFeeAmount;
     private BigDecimal cashAdvanceFeeRate;
     private BigDecimal annualMembershipFee;
     private BigDecimal cashAdvanceLimit;
+    private BigDecimal minimumDue;
 }

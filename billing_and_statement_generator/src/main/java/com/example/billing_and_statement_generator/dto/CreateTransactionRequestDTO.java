@@ -30,5 +30,5 @@ public class CreateTransactionRequestDTO {
     private String merchantName;
 
     @NotNull
-    private transactionType type;
+    private transactionType transactionType;
 }

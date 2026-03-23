@@ -13,6 +13,9 @@ public interface CardMapper {
             @Mapping(target = "cardId", ignore = true),
             @Mapping(target = "cardBalance", ignore = true),
             @Mapping(target = "active", ignore = true),
+            @Mapping(target = "cashAdvanceBalance", ignore = true),
+            @Mapping(target = "cashAdvanceAPR", ignore = true),
+            @Mapping(target = "minimumDue", ignore = true),
 
             @Mapping(target = "customer.customerId", source = "customerId")
     })
