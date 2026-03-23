@@ -29,10 +29,9 @@ public class TransactionService {
     private final TransactionMapper transactionMapper;
     private final CardService cardService;
 
-    /** Transaction Creation
+    /** Transaction DTO Creation
      * Create a transaction and apply its effect to the card balance.
      * PURCHASE / CASHADVANCE: increases balance (limit checks in CardService)
-     * PAYMENT: decreases balance (overpayment rejected in CardService)
      * DECLINED transactions will still be saved to DB but will not affect balance
      * status is server-controlled (PENDING -> SENT on success)
      */
@@ -54,24 +53,25 @@ public class TransactionService {
         // Set server-managed fields
         tx.setTransactionId(UUID.randomUUID());
         tx.setStatus(Transaction.Status.PENDING); // set as PENDING until it is confirmed
+        if(dto.getTransactionDate() == null)
+            tx.setTransactionDate(LocalDate.now());
 
         // Apply the financial impact using CardService
         BigDecimal amount = dto.getAmount();
         try {
-            switch (dto.getType()) {
+            switch (dto.getTransactionType()) {
+                // PURCHASES and INTEREST act in the same manner when adjusting the card balance
                 case PURCHASE -> {
-                    BigDecimal newBal = cardService.applyPurchase(cardId, amount);
-                    log.debug("Transaction PURCHASE applied: cardId={}, amount={}, newBalance={}", cardId, amount, newBal);
+                    BigDecimal newBalance = cardService.applyPurchase(cardId, amount);
+                    log.debug("Transaction PURCHASE applied: cardId={}, amount={}, newBalance={}", cardId, amount, newBalance);
                 }
                 case CASHADVANCE -> {
-                    BigDecimal newBal = cardService.applyCashAdvance(cardId, amount);
-                    log.debug("Transaction CASHADVANCE applied: cardId={}, amount={}, newBalance={}", cardId, amount, newBal);
+                    BigDecimal newBalance = cardService.applyCashAdvance(cardId, amount);
+                    BigDecimal fee = amount.multiply(card.getCashAdvanceFeeRate()).setScale(2, java.math.RoundingMode.HALF_UP);
+                    createFee(cardId, fee, dto.getTransactionDate());
+                    log.debug("Transaction CASHADVANCE applied: cardId={}, amount={}, fee={}, newCashAdvanceBalance={}", cardId, amount, fee, newBalance);
                 }
-                case PAYMENT -> {
-                    BigDecimal newBal = cardService.applyPayment(cardId, amount);
-                    log.debug("Transaction PAYMENT applied: cardId={}, amount={}, newBalance={}", cardId, amount, newBal);
-                }
-                default -> throw new ValidationException("Unsupported transaction type: " + dto.getType());
+                default -> throw new ValidationException("Unsupported transaction type: " + dto.getTransactionType());
             }
 
             // Mark SENT after successful balance application
@@ -80,13 +80,13 @@ public class TransactionService {
         // Handle declined transactions and save to DB
         catch (CardService.LimitExceededException e) {
             log.warn("TX_LIMIT_EXCEEDED cardId={} type={} amount={} msg={}",
-                    cardId, dto.getType(), dto.getAmount(), e.getMessage());
+                    cardId, dto.getTransactionType(), dto.getAmount(), e.getMessage());
             tx.setStatus(Transaction.Status.DECLINED);
             Transaction saved = transactionRepository.save(tx);
             throw e;
         } catch (CardService.ValidationException e) {
             log.warn("TX_VALIDATION_FAILED cardId={} type={} amount={} msg={}",
-                    cardId, dto.getType(), dto.getAmount(), e.getMessage());
+                    cardId, dto.getTransactionType(), dto.getAmount(), e.getMessage());
             tx.setStatus(Transaction.Status.DECLINED);
             Transaction saved = transactionRepository.save(tx);
             throw e;
@@ -96,6 +96,117 @@ public class TransactionService {
         Transaction saved = transactionRepository.save(tx);
         return transactionMapper.toResponse(saved);
     }
+
+    /** Payment Creation
+     * When payments are made within the Payment Service,
+     * it calls this method which creates a PAYMENT transaction
+     * DECLINED Payment transactions will still be saved to DB but won't affect Card Balance
+     */
+    @Transactional(
+            noRollbackFor = {
+                CardService.ValidationException.class,
+                CardService.LimitExceededException.class
+            })
+    public void createPayment(UUID cardId, BigDecimal amount){
+        if(amount == null){
+            throw new ValidationException("Payment Amount is required");
+        }
+        if(amount.signum() < 0){
+            throw new ValidationException("Payment Amount must be > 0");
+        }
+
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new NotFoundException("Card not found: " + cardId));
+
+        Transaction tx = new Transaction();
+        tx.setTransactionId(UUID.randomUUID());
+        tx.setCard(card);
+        tx.setAmount(amount);
+        tx.setTransactionDate(LocalDate.now());
+        tx.setMerchantName("CUSTOMER PAYMENT");
+        tx.setTransactionType(Transaction.transactionType.PAYMENT);
+        tx.setStatus(Transaction.Status.PENDING);
+
+        try{
+            BigDecimal newBalance = cardService.applyPayment(cardId, amount);
+            tx.setStatus(Transaction.Status.SENT);
+            log.debug("Transaction PAYMENT created: cardId={}, newBalance={}, amount={}", cardId, newBalance, amount);
+        }
+        catch(Exception e){ // CardService already logs if any errors occur, but still saves transaction as DECLINED
+            tx.setStatus(Transaction.Status.DECLINED);
+            transactionRepository.save(tx);
+            throw e;
+        }
+
+        transactionRepository.save(tx);
+    }
+
+    /** Interest Creation
+     * When interest are calculated within Billing Service,
+     * it calls this method which creates an INTEREST transaction to add to balance
+     * DECLINED interest transactions will NOT be saved if failed
+     */
+    @Transactional
+    public void createInterest(UUID cardId, BigDecimal amount, InterestType type){
+        if(amount == null){
+            throw new ValidationException("Interest Amount is required");
+        }
+        if(amount.signum() < 0){
+            throw new ValidationException("Interest Amount must be > 0");
+        }
+
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new NotFoundException("Card not found: " + cardId));
+
+        Transaction tx = new Transaction();
+        tx.setTransactionId(UUID.randomUUID());
+        tx.setCard(card);
+        tx.setAmount(amount);
+        tx.setTransactionDate(LocalDate.now());
+        tx.setMerchantName(type.toString());
+        tx.setTransactionType(Transaction.transactionType.INTEREST);
+
+        BigDecimal newBalance = cardService.applyInterest(cardId, amount, type);
+        tx.setStatus(Transaction.Status.SENT);
+        log.debug("Transaction INTEREST created: cardId={}, newBalance={}, amount={}", cardId, newBalance, amount);
+
+        transactionRepository.save(tx);
+    }
+
+    /** Fee Creation
+     * When fees are calculated within Billing Service,
+     * it calls this method which creates a FEE transaction to add to balance
+     * DECLINED interest transactions will NOT be saved if failed
+     */
+    @Transactional
+    public void createFee(UUID cardId, BigDecimal amount, LocalDate date){
+        if(amount == null){
+            throw new ValidationException("Fee Amount is required");
+        }
+        if(amount.signum() <= 0){
+            throw new ValidationException("Fee Amount must be > 0");
+        }
+
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new NotFoundException("Card not found: " + cardId));
+
+        Transaction tx = new Transaction();
+        tx.setTransactionId(UUID.randomUUID());
+        tx.setCard(card);
+        tx.setAmount(amount);
+        tx.setTransactionDate(date);
+        tx.setMerchantName("FEE");
+        tx.setTransactionType(Transaction.transactionType.FEE);
+        tx.setStatus(Transaction.Status.PENDING);
+
+        BigDecimal newBalance = cardService.applyFee(cardId, amount);
+        tx.setStatus(Transaction.Status.SENT);
+        log.debug("Transaction FEE created: cardId={}, newBalance={}, amount={}", cardId, newBalance, amount);
+
+        transactionRepository.save(tx);
+    }
+
+
 
     // Fetches transaction from the transaction ID
     @Transactional(readOnly = true)
@@ -144,5 +255,10 @@ public class TransactionService {
 
     public static class ValidationException extends RuntimeException {
         public ValidationException(String msg) { super(msg); }
+    }
+
+    public enum InterestType{
+        CARDBALANCE,
+        CASHADVANCE
     }
 }

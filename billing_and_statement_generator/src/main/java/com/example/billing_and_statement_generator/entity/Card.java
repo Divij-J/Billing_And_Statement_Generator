@@ -56,39 +56,52 @@ public class Card {
 
     @NotNull
     @PositiveOrZero
-    @Column(name = "card_balance", nullable = false)
+    @Column(name = "card_balance", nullable = false, precision = 15, scale = 2)
     private BigDecimal cardBalance;
+
+    @NotNull
+    @PositiveOrZero
+    @Column(name = "cash_advance_balance", nullable = false, precision = 15, scale = 2)
+    private BigDecimal cashAdvanceBalance;
 
     @NotNull
     @PositiveOrZero
     @Column(name = "credit_limit", nullable = false, precision = 15, scale = 2)
     private BigDecimal creditLimit;
 
-    @Column(name = "annual_interest_rate")
+    @Column(name = "annual_interest_rate", precision = 5, scale = 2)
     private BigDecimal annualInterestRate;
 
     @Column(name = "billing_cycle_date")
     private LocalDate billingCycleDate;
 
-    @Column(name = "late_fee_amount")
+    @Column(name = "late_fee_amount", precision = 15, scale = 2)
     @PositiveOrZero
     private BigDecimal lateFeeAmount;
 
-    @Column(name = "cash_advance_fee_rate")
+    @Column(name = "cash_advance_fee_rate", precision = 15, scale = 2)
     @PositiveOrZero
     private BigDecimal cashAdvanceFeeRate;
+
+    @Column(name = "cash_advance_APR", precision = 5, scale = 2)
+    @PositiveOrZero
+    private BigDecimal cashAdvanceAPR;
 
     @NotBlank(message = "CVV must be 3 digits")
     @Column(name = "security_code", nullable = false, length = 3)
     private String securityCode;
 
-    @Column(name = "annual_membership_fee")
+    @Column(name = "annual_membership_fee", precision = 15, scale = 2)
     @PositiveOrZero
     private BigDecimal annualMembershipFee;
 
-    @Column(name = "cash_advance_limit")
+    @Column(name = "cash_advance_limit", precision = 15, scale = 2)
     @PositiveOrZero
     private BigDecimal cashAdvanceLimit;
+
+    @Column(name = "minimum_due", precision = 15, scale = 2)
+    @PositiveOrZero
+    private BigDecimal minimumDue;
 
     //CARD TYPE ENUM
     public enum CardType {

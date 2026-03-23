@@ -41,6 +41,6 @@ public class CardController {
     // GET: Endpoint for fetching card balance for a specific card
     @GetMapping("/{cardId}/balance")
     public ResponseEntity<BigDecimal> getBalance(@PathVariable UUID cardId) {
-        return ResponseEntity.ok(cardService.getBalance(cardId));
+        return ResponseEntity.ok(cardService.getTotalBalance(cardId));
     }
 }

@@ -7,6 +7,7 @@ import com.example.billing_and_statement_generator.entity.Customer;
 import com.example.billing_and_statement_generator.mapper.CardMapper;
 import com.example.billing_and_statement_generator.repository.CardRepository;
 import com.example.billing_and_statement_generator.repository.CustomerRepository;
+import com.example.billing_and_statement_generator.services.TransactionService.InterestType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +44,24 @@ public class CardService {
         Card card = cardMapper.toEntity(dto);
         card.setCustomer(customer);
 
-        // Server-managed fields (Card ID, Card isActive, Card Balance)
+        // Server-managed fields (Card ID, Card active, Card Balance, Card cashAdvanceBalance)
         card.setCardId(UUID.randomUUID());
         card.setActive(true);
+
+        //Set interest rates and fees
+        card.setAnnualInterestRate(BigDecimal.valueOf(0.2));
+        card.setCashAdvanceAPR(BigDecimal.valueOf(0.24));
+        card.setCashAdvanceFeeRate(BigDecimal.valueOf(0.02));
+        card.setLateFeeAmount(BigDecimal.ZERO);
+
+        // Set balances + minimum due
         card.setCardBalance(BigDecimal.ZERO);
+        card.setCashAdvanceBalance(BigDecimal.ZERO);
+        card.setMinimumDue(BigDecimal.ZERO);
+
+        // Set credit limits
+        card.setCreditLimit(BigDecimal.valueOf(5000));
+        card.setCashAdvanceLimit(BigDecimal.valueOf(2500));
 
         Card saved = cardRepository.save(card);
 
@@ -88,7 +103,9 @@ public class CardService {
         BigDecimal prevBalance = card.getCardBalance(); // used for logging
         BigDecimal newBalance = card.getCardBalance().add(amount);
 
-        if (newBalance.compareTo(card.getCreditLimit()) > 0) {
+        BigDecimal totalBalance = newBalance.add(card.getCashAdvanceBalance()); // Checking if card balance + cash advance balance are still under credit limit
+
+        if (totalBalance.compareTo(card.getCreditLimit()) > 0) {
             throw new LimitExceededException("Credit limit exceeded");
         }
 
@@ -101,7 +118,7 @@ public class CardService {
     /** Cash Advance
      * Apply a cash advance amount.
      * Enforces cash advance limit for the single advance.
-     * (Cash advance fees/interest can be handled by Transactions/Billing modules.)
+     * Cash advance fees/interest handled by Transactions/Billing
      */
     @Transactional
     public BigDecimal applyCashAdvance(UUID cardId, BigDecimal amount) {
@@ -112,22 +129,30 @@ public class CardService {
         Card card = loadCard(cardId);
         assertCardActive(card); // checks if card is active
 
+        // Checks if the amount exceeds the cash advance limit
         if (card.getCashAdvanceLimit() != null && amount.compareTo(card.getCashAdvanceLimit()) > 0) {
             throw new LimitExceededException("Cash advance exceeds per-advance limit");
         }
 
-        BigDecimal prevBalance = card.getCardBalance(); // used for logging
-        BigDecimal newBalance = card.getCardBalance().add(amount);
+        // Add amount to Cash Advance Balance
+        BigDecimal prevCashAdvanceBalance = card.getCashAdvanceBalance();
+        BigDecimal newCashAdvanceBalance = prevCashAdvanceBalance.add(amount);
+
+        BigDecimal totalBalance = card.getCardBalance().add(newCashAdvanceBalance);
 
         // Ensures credit limit is not exceeded
-        if (newBalance.compareTo(card.getCreditLimit()) > 0) {
+        if (totalBalance.compareTo(card.getCreditLimit()) > 0) {
             throw new LimitExceededException("Credit limit exceeded after cash advance");
         }
+        else if(newCashAdvanceBalance.compareTo(card.getCashAdvanceLimit())>0){
+            throw new LimitExceededException("Cash advance limit exceeded after cash advance");
+        }
 
-        card.setCardBalance(newBalance);
+        card.setCashAdvanceBalance(newCashAdvanceBalance);
+
         cardRepository.save(card);
-        log.debug("Cash advance posted: cardId={}, amount={}, prevBalance={} ,newBalance={}", cardId, amount, prevBalance, newBalance);
-        return newBalance;
+        log.debug("Cash advance posted: cardId={}, amount={}, prevCashAdvanceBalance={}, newCashAdvanceBalance={}", cardId, amount, prevCashAdvanceBalance, newCashAdvanceBalance);
+        return newCashAdvanceBalance;
     }
 
     /** Payments
@@ -142,26 +167,111 @@ public class CardService {
 
         Card card = loadCard(cardId);
 
-        BigDecimal prevBalance = card.getCardBalance();
+        BigDecimal prevCardBalance = card.getCardBalance();
+        BigDecimal prevCashAdvanceBalance = card.getCashAdvanceBalance();
 
+        BigDecimal newCardBalance = prevCardBalance;
+        BigDecimal newCashAdvanceBalance = prevCashAdvanceBalance;
+
+        BigDecimal totalPrevBalance = prevCardBalance.add(prevCashAdvanceBalance);
         // Currently set to reject overpayments
-        if(amount.compareTo(prevBalance) > 0) {
-            throw new ValidationException("Payment amount exceeds current balance");
+        if(amount.compareTo(totalPrevBalance) > 0) {
+            throw new LimitExceededException("Payment amount exceeds current balance");
         }
 
-        BigDecimal newBalance = card.getCardBalance().subtract(amount);
+        BigDecimal remainder = amount;
+
+        // Subtracts amount from the Cash Advance Balance, then subtracts from the regular card balance
+        if(prevCashAdvanceBalance.signum() > 0){
+            BigDecimal min = prevCashAdvanceBalance.min(remainder); // chooses the lesser of the two values
+            newCashAdvanceBalance = prevCashAdvanceBalance.subtract(min);
+            remainder = remainder.subtract(min);
+        }
+        if(remainder.signum() > 0){
+            newCardBalance = prevCardBalance.subtract(remainder);
+        }
+
+        card.setCardBalance(newCardBalance);
+        card.setCashAdvanceBalance(newCashAdvanceBalance);
+        cardRepository.save(card);
+
+        log.debug("CardService: Payment posted: cardId={}, amount={}, prevCardBalance={}, newCardBalance={}, prevCashAdvanceBalance={}, newCashAdvanceBalance={}", cardId, amount, prevCardBalance, newCardBalance, prevCashAdvanceBalance, newCashAdvanceBalance);
+
+        return newCardBalance.add(newCashAdvanceBalance);
+    }
+
+    /** Interest
+     * Apply an interest amount to a balance (cardBalance or cashAdvanceBalance)
+     */
+    @Transactional
+    public BigDecimal applyInterest(UUID cardId, BigDecimal amount, InterestType type){
+        if (amount == null || amount.signum() <= 0) {
+            throw new ValidationException("Interest amount must be > 0");
+        }
+
+        Card card = loadCard(cardId);
+        BigDecimal prevBalance = card.getCardBalance();
+
+        BigDecimal newBalance;
+
+        if(type == InterestType.CARDBALANCE) {
+            newBalance = card.getCardBalance().add(amount);
+            card.setCardBalance(newBalance);
+        }
+        else if(type == InterestType.CASHADVANCE){
+            newBalance = card.getCashAdvanceBalance().add(amount);
+            card.setCashAdvanceBalance(newBalance);
+        }
+        else{
+            throw new ValidationException("Invalid Interest Type");
+        }
+
+        cardRepository.save(card);
+
+        log.debug("CardService: Interest applied: cardId={}, amount={}, prevBalance={}, newBalance={}, interestType={}", cardId, amount, prevBalance, newBalance, type);
+        return newBalance;
+    }
+
+    /** Fee
+     * Applies fee to the card balance
+     */
+    @Transactional
+    public BigDecimal applyFee(UUID cardId, BigDecimal amount){
+        if (amount == null || amount.signum() <= 0) {
+            throw new ValidationException("Purchase amount must be > 0");
+        }
+
+        Card card = loadCard(cardId);
+        assertCardActive(card); // checks if card is active
+
+        BigDecimal prevBalance = card.getCardBalance(); // used for logging
+        BigDecimal newBalance = card.getCardBalance().add(amount);
+
+        BigDecimal totalBalance = newBalance.add(card.getCashAdvanceBalance());
+
+        if (totalBalance.compareTo(card.getCreditLimit()) > 0) {
+            throw new LimitExceededException("Credit limit exceeded");
+        }
 
         card.setCardBalance(newBalance);
         cardRepository.save(card);
-
-        log.debug("Payment posted: cardId={}, amount={}, prevBalance={}, newBalance={}", cardId, amount, prevBalance, newBalance);
+        log.debug("CardService: Fee applied: cardId={}, amount={}, prevBalance={}, newBalance={}", cardId, amount, prevBalance, newBalance);
         return newBalance;
+    }
+
+    // Adjust card's minimum due (calculated from Billing Cycle)
+    @Transactional
+    public void setMinimumDue(UUID cardId, BigDecimal amount){
+        Card card = loadCard(cardId);
+        card.setMinimumDue(amount);
+        log.debug("CardService: Minimum due adjusted to {}", amount);
     }
 
     // Reads this card's balance
     @Transactional(readOnly = true)
-    public BigDecimal getBalance(UUID cardId) {
-        return loadCard(cardId).getCardBalance();
+    public BigDecimal getTotalBalance(UUID cardId) {
+        Card card = loadCard(cardId);
+        return card.getCardBalance().add(card.getCashAdvanceBalance());
     }
 
     // Helper method to check if card exists, otherwise loads the Card's info
