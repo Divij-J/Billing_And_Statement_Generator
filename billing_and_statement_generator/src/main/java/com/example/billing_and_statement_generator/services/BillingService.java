@@ -188,7 +188,7 @@ public class BillingService {
             .cardId(t.getCard().getCardId())
             .cycleId(cycle.getCycleId())
             .transactionDate(t.getTransactionDate())
-            .type(t.getTransactionType())
+            .transactionType(t.getTransactionType())
             .amount(t.getAmount())
             .merchantName(t.getMerchantName())
             .status(t.getStatus())
