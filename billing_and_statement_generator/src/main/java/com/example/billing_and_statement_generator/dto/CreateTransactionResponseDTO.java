@@ -21,7 +21,7 @@ public class CreateTransactionResponseDTO {
     private UUID cycleId;
 
     private LocalDate transactionDate;
-    private transactionType type;
+    private transactionType transactionType;
     private BigDecimal amount;
     private String merchantName;
     private Status status;

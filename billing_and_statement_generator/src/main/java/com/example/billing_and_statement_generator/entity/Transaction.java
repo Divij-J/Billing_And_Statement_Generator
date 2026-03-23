@@ -26,18 +26,19 @@ public class Transaction{
     @JoinColumn(name = "card_id", nullable = false)
     private Card card;
 
-    @ManyToOne
-    @JoinColumn(name = "cycle_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "cycle_id", nullable = true)
     private BillingCycle billingCycle;
 
     @Column(name = "transaction_date")
     private LocalDate transactionDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type")
     @NotNull
     private transactionType transactionType;
 
-    @Column(name = "amount")
+    @Column(name = "amount", precision = 15, scale = 2)
     @PositiveOrZero
     @NotNull
     private BigDecimal amount;
@@ -46,6 +47,7 @@ public class Transaction{
     @NotBlank
     private String merchantName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     @NotNull
     private Status status;
@@ -53,7 +55,9 @@ public class Transaction{
     public enum transactionType{
         PURCHASE,
         CASHADVANCE,
-        PAYMENT
+        PAYMENT,
+        INTEREST,
+        FEE
     }
 
     public enum Status{
