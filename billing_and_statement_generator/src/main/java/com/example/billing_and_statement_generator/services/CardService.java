@@ -1,6 +1,7 @@
 package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
+import com.example.billing_and_statement_generator.dto.v1.CreateCardRequestV1DTO;
 import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Customer;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,28 +46,76 @@ public class CardService {
         Card card = cardMapper.toEntity(dto);
         card.setCustomer(customer);
 
-        // Server-managed fields (Card ID, Card active, Card Balance, Card cashAdvanceBalance)
+        // Server-managed fields (Card Info and Balances/Fees/Interest Rates)
         card.setCardId(UUID.randomUUID());
         card.setActive(true);
+        card.setCardIssueDate(LocalDate.now());
+        card.setExpiryDate(LocalDate.now().plusYears(4));
 
         //Set interest rates and fees
         card.setAnnualInterestRate(BigDecimal.valueOf(0.2));
         card.setCashAdvanceAPR(BigDecimal.valueOf(0.24));
         card.setCashAdvanceFeeRate(BigDecimal.valueOf(0.02));
-        card.setLateFeeAmount(BigDecimal.ZERO);
+        card.setLateFeeAmount(BigDecimal.valueOf(50));
+        card.setAnnualMembershipFee(BigDecimal.valueOf(100));
 
         // Set balances + minimum due
         card.setCardBalance(BigDecimal.ZERO);
         card.setCashAdvanceBalance(BigDecimal.ZERO);
         card.setMinimumDue(BigDecimal.ZERO);
 
-        // Set credit limits
-        card.setCreditLimit(BigDecimal.valueOf(5000));
+        // Set credit limits (default values, can be changed later)
+        card.setCreditLimit(BigDecimal.valueOf(10000));
         card.setCashAdvanceLimit(BigDecimal.valueOf(2500));
 
         Card saved = cardRepository.save(card);
 
         log.info("Created card: cardId={}, customerId={}", saved.getCardId(), customerId);
+        return cardMapper.toResponse(saved);
+    }
+
+    // Create card method (V1)
+    @Transactional
+    public CreateCardResponseDTO createV1(CreateCardRequestV1DTO dto) {
+        // Validates that the customer exists
+        UUID customerId = dto.getCustomerId();
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new NotFoundException("Customer not found: " + customerId));
+
+        // Enforces a unique card number when creating a card
+        if (cardRepository.existsByCardNumber(dto.getCardNumber())) {
+            throw new ConflictException("Card number already exists");
+        }
+
+        // Map DTO to Entity (mapper creates shallow Customer; we replace with managed one)
+        Card card = cardMapper.toEntityV1(dto);
+        card.setCustomer(customer);
+
+        // Server-managed fields (Card Info and Balances/Fees/Interest Rates)
+        card.setCardId(UUID.randomUUID());
+        card.setActive(true);
+        card.setCardIssueDate(LocalDate.now());
+        card.setExpiryDate(LocalDate.now().plusYears(4));
+
+        //Set interest rates and fees
+        card.setAnnualInterestRate(BigDecimal.valueOf(0.2));
+        card.setCashAdvanceAPR(BigDecimal.valueOf(0.24));
+        card.setCashAdvanceFeeRate(BigDecimal.valueOf(0.02));
+        card.setLateFeeAmount(BigDecimal.valueOf(50));
+        card.setAnnualMembershipFee(BigDecimal.valueOf(100));
+
+        // Set balances + minimum due
+        card.setCardBalance(BigDecimal.ZERO);
+        card.setCashAdvanceBalance(BigDecimal.ZERO);
+        card.setMinimumDue(BigDecimal.ZERO);
+
+        // Set credit limits (default values, can be changed later)
+        card.setCreditLimit(BigDecimal.valueOf(10000));
+        card.setCashAdvanceLimit(BigDecimal.valueOf(2500));
+
+        Card saved = cardRepository.save(card);
+
+        log.info("Created card(v1): cardId={}, customerId={}", saved.getCardId(), customerId);
         return cardMapper.toResponse(saved);
     }
 
