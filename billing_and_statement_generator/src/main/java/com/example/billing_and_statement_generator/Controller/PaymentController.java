@@ -28,8 +28,7 @@ public class PaymentController {
 
     @PostMapping
     @Operation(summary = "Process a payment",
-            description = "Submit a payment against a billing cycle for a card",
-            security = @SecurityRequirement(name = "bearerAuth"))
+            description = "Submit a payment against a billing cycle for a card")
     public ResponseEntity<PaymentResponseDTO> processPayment(
             @Valid @RequestBody PaymentRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -38,8 +37,7 @@ public class PaymentController {
 
     @GetMapping("/{cardId}")
     @Operation(summary = "Get payment history",
-            description = "Retrieve all payments made for a specific card",
-            security = @SecurityRequirement(name = "bearerAuth"))
+            description = "Retrieve all payments made for a specific card")
     public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistory(
             @PathVariable UUID cardId) {
         return ResponseEntity.ok(paymentService.getPaymentHistory(cardId));
@@ -48,8 +46,7 @@ public class PaymentController {
     @PostMapping("/v1")
     @Operation(summary = "Process a payment (V1)",
             description = "Submit a payment with optional payment method field",
-            tags = {"Payment Controller V1"},
-            security = @SecurityRequirement(name = "bearerAuth"))
+            tags = {"Payment Controller V1"})
     public ResponseEntity<PaymentResponseV1DTO> processPaymentV1(
             @Valid @RequestBody PaymentRequestV1DTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -59,8 +56,7 @@ public class PaymentController {
     @GetMapping("/v1/{cardId}")
     @Operation(summary = "Get payment history (V1)",
             description = "Retrieve all payments made for a specific card",
-            tags = {"Payment Controller V1"},
-            security = @SecurityRequirement(name = "bearerAuth"))
+            tags = {"Payment Controller V1"})
     public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistoryV1(
             @PathVariable UUID cardId) {
         return ResponseEntity.ok(paymentService.getPaymentHistory(cardId));

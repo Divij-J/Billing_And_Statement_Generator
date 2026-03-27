@@ -25,8 +25,7 @@ public class StatementController {
 
     @PostMapping("/generate")
     @Operation(summary = "Generate a statement",
-            description = "Generate a billing statement for a specific card and billing cycle",
-            security = @SecurityRequirement(name = "bearerAuth"))
+            description = "Generate a billing statement for a specific card and billing cycle")
     public ResponseEntity<GenerateStatementResponseDTO> generateStatement(
             @Valid @RequestBody GenerateStatementRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -35,8 +34,7 @@ public class StatementController {
 
     @GetMapping("/{cardId}/{cycleId}")
     @Operation(summary = "Get a statement",
-            description = "Generate a billing statement for a specific card and billing cycle",
-            security = @SecurityRequirement(name = "bearerAuth"))
+            description = "Generate a billing statement for a specific card and billing cycle")
     public ResponseEntity<RetrieveStatementResponseDTO> getStatement(
             @PathVariable UUID cardId,
             @PathVariable UUID cycleId) {
@@ -46,8 +44,7 @@ public class StatementController {
     @PostMapping("/v1/generate")
     @Operation(summary = "Generate a statement (V1)",
             description = "Generate a billing statement for a specific card and billing cycle",
-            tags = {"Statement Controller V1"},
-            security = @SecurityRequirement(name = "bearerAuth"))
+            tags = {"Statement Controller V1"})
     public ResponseEntity<GenerateStatementResponseDTO> generateStatementV1(
             @Valid @RequestBody GenerateStatementRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -57,8 +54,7 @@ public class StatementController {
     @GetMapping("/v1/{cardId}/{cycleId}")
     @Operation(summary = "Get a statement (V1)",
             description = "Retrieve a billing statement for a specific card and billing cycle",
-            tags = {"Statement Controller V1"},
-            security = @SecurityRequirement(name = "bearerAuth"))
+            tags = {"Statement Controller V1"})
     public ResponseEntity<RetrieveStatementResponseDTO> getStatementV1(
             @PathVariable UUID cardId,
             @PathVariable UUID cycleId) {
