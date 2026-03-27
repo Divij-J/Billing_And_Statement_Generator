@@ -3,37 +3,65 @@ package com.example.billing_and_statement_generator.Controller;
 import com.example.billing_and_statement_generator.dto.CreateCustomerRequestDTO;
 import com.example.billing_and_statement_generator.dto.CustomerResponseDTO;
 import com.example.billing_and_statement_generator.services.CustomerService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/customers")
 @RequiredArgsConstructor
+@Slf4j
+@RequestMapping("/api/customers")
+@Tag(name = "Customer", description = "APIs for managing customers")
 public class CustomerController {
 
   private final CustomerService customerService;
 
   @PostMapping
-  public ResponseEntity<CustomerResponseDTO> createCustomer(
+  @Operation(
+    summary = "Create a new customer",
+                security = @SecurityRequirement(name = "bearerAuth")
+  )
+          public ResponseEntity<CustomerResponseDTO> createCustomer(
       @Valid @RequestBody CreateCustomerRequestDTO request) {
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(customerService.createCustomer(request));
+    log.info("POST /api/customers - request received for email={}",
+                      request.getEmail());
+    CustomerResponseDTO response = customerService.createCustomer(request);
+    log.info("POST /api/customers - customer created id={}",
+                      response.getCustomerId());
+    return ResponseEntity.status(201).body(response);
   }
 
   @GetMapping("/{customerId}")
-  public ResponseEntity<CustomerResponseDTO> getCustomer(
+  @Operation(
+    summary = "Get customer by ID",
+                security = @SecurityRequirement(name = "bearerAuth")
+  )
+          public ResponseEntity<CustomerResponseDTO> getCustomer(
       @PathVariable UUID customerId) {
-    return ResponseEntity.ok(customerService.getCustomer(customerId));
+    log.info("GET /api/customers/{} - request received", customerId);
+    CustomerResponseDTO response = customerService.getCustomer(customerId);
+    log.info("GET /api/customers/{} - successfully retrieved", customerId);
+    return ResponseEntity.ok(response);
   }
 
   @PutMapping("/{customerId}")
-  public ResponseEntity<CustomerResponseDTO> updateCustomer(
+  @Operation(
+    summary = "Update customer by ID",
+                security = @SecurityRequirement(name = "bearerAuth")
+  )
+          public ResponseEntity<CustomerResponseDTO> updateCustomer(
       @PathVariable UUID customerId,
       @Valid @RequestBody CreateCustomerRequestDTO request) {
-    return ResponseEntity.ok(customerService.updateCustomer(customerId, request));
+    log.info("PUT /api/customers/{} - request received", customerId);
+    CustomerResponseDTO response =
+      customerService.updateCustomer(customerId, request);
+    log.info("PUT /api/customers/{} - successfully updated", customerId);
+    return ResponseEntity.ok(response);
   }
 }

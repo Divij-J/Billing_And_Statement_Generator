@@ -1,35 +1,38 @@
 package com.example.billing_and_statement_generator.config;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@OpenAPIDefinition(
+        info = @Info(title = "Billing and Statement Generator API", version = "1.0"),
+        security = {
+                @SecurityRequirement(name = "bearerAuth")
+        }
+)
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
+@SecurityScheme(
+        name = "basicAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "basic"
+)
 public class SwaggerConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-
-        String bearerAuth = "bearerAuth";
-        String basicAuth = "basicAuth";
-
-        return new OpenAPI().info(new Info()
-                        .title("Billing and Statement Generator API")
-                        .version("1.0")
-                        .description("Secure API for billing and statement generator"))
-                .components(new Components()
-                        .addSecuritySchemes(bearerAuth, new SecurityScheme()
-                                .name(bearerAuth)
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT"))
-                        .addSecuritySchemes(basicAuth, new SecurityScheme()
-                                .name(basicAuth)
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("basic")));
-
+        return new OpenAPI().
+                components(new Components());
     }
 }
