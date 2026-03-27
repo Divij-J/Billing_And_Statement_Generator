@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class PaymentRequestDTO {
+
     @NotBlank(message = "Cycle ID is required")
     private String cycleId;
 
@@ -27,4 +28,7 @@ public class PaymentRequestDTO {
 
     @NotBlank(message = "Payment type is required")
     private String paymentType;
+
+    @NotBlank(message = "Payment method is required")
+    private String paymentMethod; // BANK_TRANSFER, CHECK, ONLINE
 }

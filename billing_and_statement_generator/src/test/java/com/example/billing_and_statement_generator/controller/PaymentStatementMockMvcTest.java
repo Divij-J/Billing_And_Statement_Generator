@@ -50,9 +50,6 @@ class PaymentStatementMockMvcTest {
     private CustomerRepository customerRepository;
 
     @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
     private BillingCycleRepository billingCycleRepository;
 
     @Autowired
@@ -96,16 +93,6 @@ class PaymentStatementMockMvcTest {
         testCard.setCashAdvanceLimit(new BigDecimal("1000.00"));
         cardRepository.save(testCard);
 
-        Transaction transaction = new Transaction();
-        transaction.setTransactionId(UUID.randomUUID());
-        transaction.setCard(testCard);
-        transaction.setBillingCycle(testBillingCycle);
-        transaction.setTransactionDate(LocalDate.now());
-        transaction.setTransactionType(Transaction.transactionType.PURCHASE);
-        transaction.setAmount(new BigDecimal("1000.00"));
-        transaction.setMerchantName("Test Merchant");
-        transaction.setStatus(Transaction.Status.SENT);
-
         testBillingCycle = new BillingCycle();
         testBillingCycle.setCycleId(UUID.randomUUID());
         testBillingCycle.setCard(testCard);
@@ -126,7 +113,7 @@ class PaymentStatementMockMvcTest {
         cardRepository.save(testCard);
     }
 
-    // ── Payment MockMvc tests ───────────────────────────────────────
+    //Payment MockMvc tests
 
     @Test
     void shouldProcessPayment_GivenValidRequest() throws Exception {
@@ -135,26 +122,7 @@ class PaymentStatementMockMvcTest {
                 .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("500.00")
                 .paymentType("PARTIAL")
-                .build();
-
-        mockMvc.perform(post("/payments")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.amountPaid").value("500.00"))
-                .andExpect(jsonPath("$.paymentType").value("PARTIAL"))
-                .andExpect(jsonPath("$.paymentStatus").value("SUCCESS"));
-    }
-
-    @Test
-    void shouldProcessPaymentV1_GivenValidRequest() throws Exception {
-        PaymentRequestDTO request = PaymentRequestDTO.builder()
-                .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
-                .amountPaid("300.00")
-                .paymentType("MINIMUM")
+                .paymentMethod("ONLINE")
                 .build();
 
         mockMvc.perform(post("/payments/v1")
@@ -162,7 +130,30 @@ class PaymentStatementMockMvcTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.amountPaid").value("500.00"))
+                .andExpect(jsonPath("$.paymentType").value("PARTIAL"))
+                .andExpect(jsonPath("$.paymentStatus").value("SUCCESS"))
+                .andExpect(jsonPath("$.paymentMethod").value("ONLINE"));
+    }
+
+    @Test
+    void shouldProcessPaymentWithMinimumType_GivenValidRequest() throws Exception {
+        PaymentRequestDTO request = PaymentRequestDTO.builder()
+                .cardId(testCard.getCardId().toString())
+                .cycleId(testBillingCycle.getCycleId().toString())
+                .amountPaid("300.00")
+                .paymentType("MINIMUM")
+                .paymentMethod("BANK_TRANSFER")
+                .build();
+
+        mockMvc.perform(post("/payments/v1")
+                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentMethod").value("BANK_TRANSFER"));
     }
 
     @Test
@@ -175,9 +166,10 @@ class PaymentStatementMockMvcTest {
         payment.setPaymentDate(LocalDateTime.now());
         payment.setPaymentType(Payment.PaymentType.PARTIAL);
         payment.setPaymentStatus(Payment.PaymentStatus.SUCCESS);
+        payment.setPaymentMethod(Payment.PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
-        mockMvc.perform(get("/payments/{cardId}", testCard.getCardId())
+        mockMvc.perform(get("/payments/v1/{cardId}", testCard.getCardId())
                         .with(jwt().jwt(builder -> builder.subject("test-user"))))
                 .andDo(print())
                 .andExpect(status().isOk());
@@ -189,7 +181,7 @@ class PaymentStatementMockMvcTest {
                 .cardId(testCard.getCardId().toString())
                 .build();
 
-        mockMvc.perform(post("/payments")
+        mockMvc.perform(post("/payments/v1")
                         .with(jwt().jwt(builder -> builder.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
@@ -197,28 +189,10 @@ class PaymentStatementMockMvcTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ── Statement MockMvc tests ─────────────────────────────────────
+    //Statement MockMvc tests
 
     @Test
     void shouldGenerateStatement_GivenValidRequest() throws Exception {
-        GenerateStatementRequestDTO request = GenerateStatementRequestDTO.builder()
-                .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
-                .build();
-
-        mockMvc.perform(post("/statements/generate")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statementStatus").value("GENERATED"))
-                .andExpect(jsonPath("$.message")
-                        .value("Statement generated successfully"));
-    }
-
-    @Test
-    void shouldGenerateStatementV1_GivenValidRequest() throws Exception {
         GenerateStatementRequestDTO request = GenerateStatementRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
                 .cycleId(testBillingCycle.getCycleId().toString())
@@ -229,7 +203,10 @@ class PaymentStatementMockMvcTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statementStatus").value("GENERATED"))
+                .andExpect(jsonPath("$.message")
+                        .value("Statement generated successfully"));
     }
 
     @Test
@@ -253,7 +230,7 @@ class PaymentStatementMockMvcTest {
         statement.setStatementStatus(Statement.StatementStatus.GENERATED);
         statementRepository.save(statement);
 
-        mockMvc.perform(get("/statements/{cardId}/{cycleId}",
+        mockMvc.perform(get("/statements/v1/{cardId}/{cycleId}",
                         testCard.getCardId(),
                         testBillingCycle.getCycleId())
                         .with(jwt().jwt(builder -> builder.subject("test-user"))))
@@ -268,7 +245,7 @@ class PaymentStatementMockMvcTest {
                 .cardId(testCard.getCardId().toString())
                 .build();
 
-        mockMvc.perform(post("/statements/generate")
+        mockMvc.perform(post("/statements/v1/generate")
                         .with(jwt().jwt(builder -> builder.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))

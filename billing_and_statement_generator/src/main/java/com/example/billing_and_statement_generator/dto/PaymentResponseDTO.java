@@ -18,5 +18,5 @@ public class PaymentResponseDTO {
     private String paymentDate;
     private String paymentType;
     private String paymentStatus;
-
+    private String paymentMethod; // new field
 }

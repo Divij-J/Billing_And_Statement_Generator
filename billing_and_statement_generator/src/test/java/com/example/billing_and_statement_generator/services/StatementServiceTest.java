@@ -101,7 +101,7 @@ class StatementServiceTest {
                 .build();
     }
 
-    // ── generateStatement() tests ───────────────────────────────────
+    //generateStatement() tests
 
     @Test
     void givenValidRequest_whenGenerateStatementCalled_thenReturnsGenerateResponse() {
@@ -222,7 +222,7 @@ class StatementServiceTest {
         verify(statementRepository, never()).save(any());
     }
 
-    // ── getStatement() tests ────────────────────────────────────────
+    //getStatement() tests
 
     @Test
     void givenValidCardAndCycleId_whenGetStatementCalled_thenReturnsStatement() {
