@@ -96,6 +96,7 @@ class PaymentRepositoryTest {
         payment.setPaymentDate(LocalDateTime.now());
         payment.setPaymentType(type);
         payment.setPaymentStatus(status);
+        payment.setPaymentMethod(Payment.PaymentMethod.ONLINE);
         return paymentRepository.save(payment);
     }
 
@@ -115,6 +116,8 @@ class PaymentRepositoryTest {
                 .isEqualByComparingTo(new BigDecimal("500.00"));
         assertThat(found.getPaymentType())
                 .isEqualTo(Payment.PaymentType.PARTIAL);
+        assertThat(found.getPaymentMethod())
+                .isEqualTo(Payment.PaymentMethod.ONLINE);
     }
 
     @Test

@@ -3,8 +3,6 @@ package com.example.billing_and_statement_generator.mapper;
 import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
 import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO;
-import com.example.billing_and_statement_generator.dto.v1.PaymentRequestV1DTO;
-import com.example.billing_and_statement_generator.dto.v1.PaymentResponseV1DTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;
@@ -13,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +40,7 @@ class PaymentMapperTest {
                 .build();
     }
 
-    // ── toEntity() tests ────────────────────────────────────────────
+    //toEntity() tests
 
     @Test
     void givenValidPaymentRequestDTO_whenToEntityCalled_thenReturnsPaymentEntity() {
@@ -50,6 +49,7 @@ class PaymentMapperTest {
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("500.00")
                 .paymentType("FULL")
+                .paymentMethod("ONLINE")
                 .build();
 
         Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
@@ -62,6 +62,7 @@ class PaymentMapperTest {
         assertThat(result.getPaymentType()).isEqualTo(Payment.PaymentType.FULL);
         assertThat(result.getPaymentStatus()).isEqualTo(Payment.PaymentStatus.PENDING);
         assertThat(result.getPaymentDate()).isNotNull();
+        assertThat(result.getPaymentMethod()).isEqualTo(Payment.PaymentMethod.ONLINE);
     }
 
     @Test
@@ -71,11 +72,13 @@ class PaymentMapperTest {
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("100.00")
                 .paymentType("MINIMUM")
+                .paymentMethod("CHECK")
                 .build();
 
         Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
 
         assertThat(result.getPaymentType()).isEqualTo(Payment.PaymentType.MINIMUM);
+        assertThat(result.getPaymentMethod()).isEqualTo(Payment.PaymentMethod.CHECK);
     }
 
     @Test
@@ -85,17 +88,16 @@ class PaymentMapperTest {
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("100.00")
                 .paymentType("INVALID_TYPE")
+                .paymentMethod("ONLINE")
                 .build();
 
         assertThrows(RuntimeException.class,
                 () -> paymentMapper.toEntity(dto, testCard, testBillingCycle));
     }
 
-    // ── toEntityV1() tests ──────────────────────────────────────────
-
     @Test
-    void givenValidPaymentRequestV1DTO_whenToEntityV1Called_thenReturnsPaymentEntity() {
-        PaymentRequestV1DTO dto = PaymentRequestV1DTO.builder()
+    void givenBankTransferPaymentMethod_whenToEntityCalled_thenReturnsCorrectPaymentMethod() {
+        PaymentRequestDTO dto = PaymentRequestDTO.builder()
                 .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("750.00")
@@ -103,33 +105,14 @@ class PaymentMapperTest {
                 .paymentMethod("BANK_TRANSFER")
                 .build();
 
-        Payment result = paymentMapper.toEntityV1(dto, testCard, testBillingCycle);
+        Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getPaymentId()).isNotNull();
-        assertThat(result.getAmountPaid()).isEqualByComparingTo(new BigDecimal("750.00"));
-        assertThat(result.getPaymentType()).isEqualTo(Payment.PaymentType.PARTIAL);
         assertThat(result.getPaymentMethod()).isEqualTo(Payment.PaymentMethod.BANK_TRANSFER);
     }
 
     @Test
-    void givenNullPaymentMethod_whenToEntityV1Called_thenPaymentMethodIsNull() {
-        PaymentRequestV1DTO dto = PaymentRequestV1DTO.builder()
-                .cycleId(testBillingCycle.getCycleId().toString())
-                .cardId(testCard.getCardId().toString())
-                .amountPaid("200.00")
-                .paymentType("FULL")
-                .paymentMethod(null)
-                .build();
-
-        Payment result = paymentMapper.toEntityV1(dto, testCard, testBillingCycle);
-
-        assertThat(result.getPaymentMethod()).isNull();
-    }
-
-    @Test
-    void givenInvalidPaymentMethod_whenToEntityV1Called_thenThrowsException() {
-        PaymentRequestV1DTO dto = PaymentRequestV1DTO.builder()
+    void givenInvalidPaymentMethod_whenToEntityCalled_thenThrowsException() {
+        PaymentRequestDTO dto = PaymentRequestDTO.builder()
                 .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("200.00")
@@ -138,10 +121,10 @@ class PaymentMapperTest {
                 .build();
 
         assertThrows(RuntimeException.class,
-                () -> paymentMapper.toEntityV1(dto, testCard, testBillingCycle));
+                () -> paymentMapper.toEntity(dto, testCard, testBillingCycle));
     }
 
-    // ── toResponseDTO() tests ───────────────────────────────────────
+    //toResponseDTO() tests
 
     @Test
     void givenPaymentEntity_whenToResponseDTOCalled_thenReturnsCorrectDTO() {
@@ -154,7 +137,8 @@ class PaymentMapperTest {
                 .amountPaid(new BigDecimal("500.00"))
                 .paymentType(Payment.PaymentType.FULL)
                 .paymentStatus(Payment.PaymentStatus.SUCCESS)
-                .paymentDate(java.time.LocalDateTime.now())
+                .paymentMethod(Payment.PaymentMethod.ONLINE)
+                .paymentDate(LocalDateTime.now())
                 .build();
 
         PaymentResponseDTO result = paymentMapper.toResponseDTO(payment);
@@ -166,35 +150,11 @@ class PaymentMapperTest {
         assertThat(result.getAmountPaid()).isEqualTo("500.00");
         assertThat(result.getPaymentType()).isEqualTo("FULL");
         assertThat(result.getPaymentStatus()).isEqualTo("SUCCESS");
-    }
-
-    // ── toResponseV1DTO() tests ─────────────────────────────────────
-
-    @Test
-    void givenPaymentEntityWithPaymentMethod_whenToResponseV1DTOCalled_thenReturnsCorrectDTO() {
-        UUID paymentId = UUID.randomUUID();
-
-        Payment payment = Payment.builder()
-                .paymentId(paymentId)
-                .card(testCard)
-                .billingCycle(testBillingCycle)
-                .amountPaid(new BigDecimal("750.00"))
-                .paymentType(Payment.PaymentType.PARTIAL)
-                .paymentStatus(Payment.PaymentStatus.SUCCESS)
-                .paymentMethod(Payment.PaymentMethod.ONLINE)
-                .paymentDate(java.time.LocalDateTime.now())
-                .build();
-
-        PaymentResponseV1DTO result = paymentMapper.toResponseV1DTO(payment);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getPaymentId()).isEqualTo(paymentId.toString());
-        assertThat(result.getAmountPaid()).isEqualTo("750.00");
         assertThat(result.getPaymentMethod()).isEqualTo("ONLINE");
     }
 
     @Test
-    void givenPaymentEntityWithNullPaymentMethod_whenToResponseV1DTOCalled_thenPaymentMethodIsNull() {
+    void givenPaymentEntityWithNullPaymentMethod_whenToResponseDTOCalled_thenPaymentMethodIsNull() {
         Payment payment = Payment.builder()
                 .paymentId(UUID.randomUUID())
                 .card(testCard)
@@ -203,15 +163,15 @@ class PaymentMapperTest {
                 .paymentType(Payment.PaymentType.FULL)
                 .paymentStatus(Payment.PaymentStatus.SUCCESS)
                 .paymentMethod(null)
-                .paymentDate(java.time.LocalDateTime.now())
+                .paymentDate(LocalDateTime.now())
                 .build();
 
-        PaymentResponseV1DTO result = paymentMapper.toResponseV1DTO(payment);
+        PaymentResponseDTO result = paymentMapper.toResponseDTO(payment);
 
         assertThat(result.getPaymentMethod()).isNull();
     }
 
-    // ── toHistoryDTO() tests ────────────────────────────────────────
+    //toHistoryDTO() tests
 
     @Test
     void givenPaymentEntity_whenToHistoryDTOCalled_thenReturnsCorrectHistoryDTO() {
@@ -224,7 +184,8 @@ class PaymentMapperTest {
                 .amountPaid(new BigDecimal("300.00"))
                 .paymentType(Payment.PaymentType.MINIMUM)
                 .paymentStatus(Payment.PaymentStatus.SUCCESS)
-                .paymentDate(java.time.LocalDateTime.now())
+                .paymentMethod(Payment.PaymentMethod.CHECK)
+                .paymentDate(LocalDateTime.now())
                 .build();
 
         RetrievePaymentHistoryDTO result = paymentMapper.toHistoryDTO(payment);
@@ -236,5 +197,24 @@ class PaymentMapperTest {
         assertThat(result.getAmountPaid()).isEqualTo("300.00");
         assertThat(result.getPaymentType()).isEqualTo("MINIMUM");
         assertThat(result.getPaymentStatus()).isEqualTo("SUCCESS");
+        assertThat(result.getPaymentMethod()).isEqualTo("CHECK");
+    }
+
+    @Test
+    void givenPaymentEntityWithNullPaymentMethod_whenToHistoryDTOCalled_thenPaymentMethodIsNull() {
+        Payment payment = Payment.builder()
+                .paymentId(UUID.randomUUID())
+                .card(testCard)
+                .billingCycle(testBillingCycle)
+                .amountPaid(new BigDecimal("300.00"))
+                .paymentType(Payment.PaymentType.MINIMUM)
+                .paymentStatus(Payment.PaymentStatus.SUCCESS)
+                .paymentMethod(null)
+                .paymentDate(LocalDateTime.now())
+                .build();
+
+        RetrievePaymentHistoryDTO result = paymentMapper.toHistoryDTO(payment);
+
+        assertThat(result.getPaymentMethod()).isNull();
     }
 }

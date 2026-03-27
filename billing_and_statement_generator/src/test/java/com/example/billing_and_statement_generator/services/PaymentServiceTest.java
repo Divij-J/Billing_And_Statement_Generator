@@ -3,8 +3,6 @@ package com.example.billing_and_statement_generator.services;
 import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
 import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO;
-import com.example.billing_and_statement_generator.dto.v1.PaymentRequestV1DTO;
-import com.example.billing_and_statement_generator.dto.v1.PaymentResponseV1DTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;
@@ -20,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -82,10 +79,11 @@ class PaymentServiceTest {
                 .paymentDate(LocalDateTime.now())
                 .paymentType(Payment.PaymentType.FULL)
                 .paymentStatus(Payment.PaymentStatus.SUCCESS)
+                .paymentMethod(Payment.PaymentMethod.ONLINE)
                 .build();
     }
 
-    // ── processPayment() tests ──────────────────────────────────────
+    //processPayment() tests
 
     @Test
     void givenValidPaymentRequest_whenProcessPaymentCalled_thenReturnsPaymentResponse() {
@@ -94,6 +92,7 @@ class PaymentServiceTest {
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
                 .paymentType("FULL")
+                .paymentMethod("ONLINE")
                 .build();
 
         PaymentResponseDTO expectedResponse = PaymentResponseDTO.builder()
@@ -103,6 +102,7 @@ class PaymentServiceTest {
                 .amountPaid("500.00")
                 .paymentType("FULL")
                 .paymentStatus("SUCCESS")
+                .paymentMethod("ONLINE")
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
@@ -110,7 +110,8 @@ class PaymentServiceTest {
         when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
         when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
         when(paymentMapper.toResponseDTO(testPayment)).thenReturn(expectedResponse);
-        when(cardService.applyPayment(any(UUID.class), any(BigDecimal.class))).thenReturn(BigDecimal.ZERO);
+        when(cardService.applyPayment(any(UUID.class), any(BigDecimal.class)))
+                .thenReturn(BigDecimal.ZERO);
 
         PaymentResponseDTO result = paymentService.processPayment(dto);
 
@@ -118,6 +119,7 @@ class PaymentServiceTest {
         assertThat(result.getCardId()).isEqualTo(cardId.toString());
         assertThat(result.getAmountPaid()).isEqualTo("500.00");
         assertThat(result.getPaymentStatus()).isEqualTo("SUCCESS");
+        assertThat(result.getPaymentMethod()).isEqualTo("ONLINE");
 
         verify(cardRepository).findById(cardId);
         verify(billingCycleRepository).findById(cycleId);
@@ -131,6 +133,7 @@ class PaymentServiceTest {
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
                 .paymentType("FULL")
+                .paymentMethod("ONLINE")
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
@@ -149,6 +152,7 @@ class PaymentServiceTest {
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
                 .paymentType("FULL")
+                .paymentMethod("ONLINE")
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
@@ -177,6 +181,7 @@ class PaymentServiceTest {
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
                 .paymentType("FULL")
+                .paymentMethod("ONLINE")
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
@@ -189,46 +194,7 @@ class PaymentServiceTest {
         verify(paymentRepository, never()).save(any());
     }
 
-    // ── processPaymentV1() tests ────────────────────────────────────
-
-    @Test
-    void givenValidV1PaymentRequest_whenProcessPaymentV1Called_thenReturnsV1Response() {
-        PaymentRequestV1DTO dto = PaymentRequestV1DTO.builder()
-                .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
-                .amountPaid("500.00")
-                .paymentType("FULL")
-                .paymentMethod("ONLINE")
-                .build();
-
-        PaymentResponseV1DTO expectedResponse = PaymentResponseV1DTO.builder()
-                .paymentId(paymentId.toString())
-                .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
-                .amountPaid("500.00")
-                .paymentType("FULL")
-                .paymentStatus("SUCCESS")
-                .paymentMethod("ONLINE")
-                .build();
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId))
-                .thenReturn(Optional.of(testBillingCycle));
-        when(paymentMapper.toEntityV1(any(), any(), any())).thenReturn(testPayment);
-        when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
-        when(paymentMapper.toResponseV1DTO(testPayment)).thenReturn(expectedResponse);
-        when(cardService.applyPayment(any(UUID.class), any(BigDecimal.class))).thenReturn(BigDecimal.ZERO);
-
-        PaymentResponseV1DTO result = paymentService.processPaymentV1(dto);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getPaymentMethod()).isEqualTo("ONLINE");
-        assertThat(result.getPaymentStatus()).isEqualTo("SUCCESS");
-
-        verify(paymentRepository).save(any(Payment.class));
-    }
-
-    // ── getPaymentHistory() tests ───────────────────────────────────
+    //getPaymentHistory() tests
 
     @Test
     void givenValidCardId_whenGetPaymentHistoryCalled_thenReturnsPaymentList() {
@@ -238,6 +204,7 @@ class PaymentServiceTest {
                 .amountPaid("500.00")
                 .paymentType("FULL")
                 .paymentStatus("SUCCESS")
+                .paymentMethod("ONLINE")
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
