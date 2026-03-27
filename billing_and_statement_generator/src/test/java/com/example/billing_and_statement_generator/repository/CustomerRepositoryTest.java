@@ -26,7 +26,7 @@ class CustomerRepositoryTest {
         customer.setMiddleInitial("A");
         customer.setEmail("john@example.com");
         customer.setPhoneNumber("1234567890");
-        customer.setPhoneType(Customer.PhoneType.valueOf("MOBILE"));
+        customer.setPhoneType(Customer.PhoneType.MOBILE);
         customer.setAddress1("123 Test St");
         customer.setCity("Chicago");
         customer.setState("IL");
