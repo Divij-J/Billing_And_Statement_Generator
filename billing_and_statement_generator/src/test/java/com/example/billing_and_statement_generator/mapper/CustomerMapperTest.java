@@ -19,7 +19,7 @@ class CustomerMapperTest {
     }
 
     // ------------------------------------------------------------------------
-    // ✅ TEST: toDTO()
+    // TEST: toDTO()
     // ------------------------------------------------------------------------
     @Test
     void toDTO_shouldMapCustomerToDTO() {
@@ -46,12 +46,12 @@ class CustomerMapperTest {
         assertEquals("A", dto.getMiddleInitial());
         assertEquals("john@example.com", dto.getEmail());
         assertEquals("1234567890", dto.getPhoneNumber());
-        assertEquals("MOBILE", dto.getPhoneType());  // ✅ via @Named mapping
+        assertEquals("MOBILE", dto.getPhoneType());  // via @Named mapping
         assertEquals("60601", dto.getZipcode());
     }
 
     // ------------------------------------------------------------------------
-    // ✅ TEST: updateEntityFromRequest()
+    // TEST: updateEntityFromRequest()
     // ------------------------------------------------------------------------
     @Test
     void updateEntityFromRequest_shouldUpdateFieldsCorrectly() {
@@ -82,18 +82,18 @@ class CustomerMapperTest {
         assertEquals("B", updated.getMiddleInitial());
         assertEquals("new@example.com", updated.getEmail());
         assertEquals("5555555555", updated.getPhoneNumber());
-        assertEquals(Customer.PhoneType.MOBILE, updated.getPhoneType()); // ✅ uppercase + enum conversion
+        assertEquals(Customer.PhoneType.MOBILE, updated.getPhoneType()); // uppercase + enum conversion
         assertEquals("Austin", updated.getCity());
         assertEquals("TX", updated.getState());
         assertEquals("73301", updated.getZipcode());
     }
 
     // ------------------------------------------------------------------------
-    // ✅ TEST: phoneTypeToString() custom mapping
+    // TEST: phoneTypeToString() custom mapping
     // ------------------------------------------------------------------------
     @Test
     void phoneTypeToString_shouldReturnCorrectString() {
         assertEquals("MOBILE", mapper.phoneTypeToString(Customer.PhoneType.MOBILE));
-        assertNull(mapper.phoneTypeToString(null));  // ✅ covers null branch
+        assertNull(mapper.phoneTypeToString(null));  // covers null branch
     }
 }

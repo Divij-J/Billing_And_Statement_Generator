@@ -54,39 +54,39 @@ public class BillingController {
     return ResponseEntity.status(201).body(response);
   }
 
-  // Original GET
-          @GetMapping("/{cardId}/{cycleId}")
-  @Operation(
-    summary = "Get billing cycle by card and cycle ID",
-                security = @SecurityRequirement(name = "bearerAuth")
-  )
-          public ResponseEntity<BillingCycleResponseDTO> getBillingCycle(
-      @PathVariable UUID cardId,
-      @PathVariable UUID cycleId) {
-    log.info("GET /api/billing/{}/{} - request received", cardId, cycleId);
-    BillingCycleResponseDTO response =
-      billingService.getBillingCycle(cardId, cycleId);
-    log.info("GET /api/billing/{}/{} - successfully retrieved",
-                      cardId, cycleId);
-    return ResponseEntity.ok(response);
-  }
+    // Original POST
+    @PostMapping("/{cardId}/{cycleId}")
+    @Operation(
+            summary = "Get billing cycle by card and cycle ID",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<BillingCycleResponseDTO> getBillingCycle(
+            @PathVariable UUID cardId,
+            @PathVariable UUID cycleId) {
+        log.info("POST /api/billing/{}/{} - request received", cardId, cycleId);
+        BillingCycleResponseDTO response =
+                billingService.getBillingCycle(cardId, cycleId);
+        log.info("POST /api/billing/{}/{} - successfully retrieved",
+                cardId, cycleId);
+        return ResponseEntity.ok(response);
+    }
 
-  // V1 GET — returns fee breakdown
-          @GetMapping("/v1/{cardId}/{cycleId}")
-  @Operation(
-    summary = "Get billing cycle V1 — includes fee breakdown",
-                security = @SecurityRequirement(name = "bearerAuth"),
-                tags = {"billing-controller-V1"}
-  )
-          public ResponseEntity<BillingCycleResponseV1DTO> getBillingCycleV1(
-      @PathVariable UUID cardId,
-      @PathVariable UUID cycleId) {
-    log.info("GET /api/billing/v1/{}/{} - V1 request received",
-                      cardId, cycleId);
-    BillingCycleResponseV1DTO response =
-      billingService.getBillingCycleV1(cardId, cycleId);
-    log.info("GET /api/billing/v1/{}/{} - successfully retrieved V1",
-                      cardId, cycleId);
-    return ResponseEntity.ok(response);
-  }
+    // V1 POST — returns fee breakdown
+    @PostMapping("/v1/{cardId}/{cycleId}")
+    @Operation(
+            summary = "Get billing cycle V1 — includes fee breakdown",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            tags = {"billing-controller-V1"}
+    )
+    public ResponseEntity<BillingCycleResponseV1DTO> getBillingCycleV1(
+            @PathVariable UUID cardId,
+            @PathVariable UUID cycleId) {
+        log.info("POST /api/billing/v1/{}/{} - V1 request received",
+                cardId, cycleId);
+        BillingCycleResponseV1DTO response =
+                billingService.getBillingCycleV1(cardId, cycleId);
+        log.info("POST /api/billing/v1/{}/{} - successfully retrieved V1",
+                cardId, cycleId);
+        return ResponseEntity.ok(response);
+    }
 }

@@ -64,7 +64,7 @@ class CustomerControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/customers")
-                        .with(csrf())        // ✅ REQUIRED FOR POST
+                        .with(csrf()) // Required for POST
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -74,7 +74,7 @@ class CustomerControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: GET /api/customers/{id}
+    // TEST: POST /api/customers/{id}
     // -------------------------------------------------------------------------
     @WithMockUser
     @Test
@@ -89,7 +89,9 @@ class CustomerControllerTest {
 
         Mockito.when(customerService.getCustomer(id)).thenReturn(response);
 
-        mockMvc.perform(get("/api/customers/" + id))
+        mockMvc.perform(post("/api/customers/" + id)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customerId").value(id.toString()))
                 .andExpect(jsonPath("$.firstName").value("Jane"))
@@ -125,7 +127,7 @@ class CustomerControllerTest {
                 .thenReturn(updated);
 
         mockMvc.perform(put("/api/customers/" + id)
-                        .with(csrf())   // ✅ REQUIRED for PUT
+                        .with(csrf()) // Required for PUT
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

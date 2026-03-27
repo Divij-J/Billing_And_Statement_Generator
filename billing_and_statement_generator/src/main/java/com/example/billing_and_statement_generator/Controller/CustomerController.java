@@ -37,18 +37,18 @@ public class CustomerController {
     return ResponseEntity.status(201).body(response);
   }
 
-  @GetMapping("/{customerId}")
-  @Operation(
-    summary = "Get customer by ID",
-                security = @SecurityRequirement(name = "bearerAuth")
-  )
-          public ResponseEntity<CustomerResponseDTO> getCustomer(
-      @PathVariable UUID customerId) {
-    log.info("GET /api/customers/{} - request received", customerId);
-    CustomerResponseDTO response = customerService.getCustomer(customerId);
-    log.info("GET /api/customers/{} - successfully retrieved", customerId);
-    return ResponseEntity.ok(response);
-  }
+    @PostMapping("/{customerId}")
+    @Operation(
+            summary = "Get customer by ID",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<CustomerResponseDTO> getCustomer(
+            @PathVariable UUID customerId) {
+        log.info("POST /api/customers/{} - request received", customerId);
+        CustomerResponseDTO response = customerService.getCustomer(customerId);
+        log.info("POST /api/customers/{} - successfully retrieved", customerId);
+        return ResponseEntity.ok(response);
+    }
 
   @PutMapping("/{customerId}")
   @Operation(

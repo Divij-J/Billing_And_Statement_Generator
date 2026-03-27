@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
         import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -88,7 +89,7 @@ class BillingControllerTest {
     }
 
     // ------------------------------------------------------------
-    // GET /api/billing/{cardId}/{cycleId}
+    // POST /api/billing/{cardId}/{cycleId}
     // ------------------------------------------------------------
     @WithMockUser
     @Test
@@ -104,14 +105,17 @@ class BillingControllerTest {
         Mockito.when(billingService.getBillingCycle(cardId, cycleId))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/billing/" + cardId + "/" + cycleId))
+        mockMvc.perform(post("/api/billing/" + cardId + "/" + cycleId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
-                .andExpect(jsonPath("$.cardId").value(cardId.toString()));
+                .andExpect(jsonPath("$.cardId").value(cardId.toString()))
+                .andExpect(jsonPath("$.cycleStatus").value("OPEN"));
     }
 
     // ------------------------------------------------------------
-    // GET /api/billing/v1/{cardId}/{cycleId}
+    // POST /api/billing/v1/{cardId}/{cycleId}
     // ------------------------------------------------------------
     @WithMockUser
     @Test
@@ -127,9 +131,12 @@ class BillingControllerTest {
         Mockito.when(billingService.getBillingCycleV1(cardId, cycleId))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/billing/v1/" + cardId + "/" + cycleId))
+        mockMvc.perform(post("/api/billing/v1/" + cardId + "/" + cycleId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
-                .andExpect(jsonPath("$.cardId").value(cardId.toString()));
+                .andExpect(jsonPath("$.cardId").value(cardId.toString()))
+                .andExpect(jsonPath("$.cycleStatus").value("OPEN"));
     }
 }
