@@ -12,30 +12,24 @@ import com.example.billing_and_statement_generator.repository.CardRepository;
 import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import com.example.billing_and_statement_generator.dto.v1.PaymentRequestV1DTO;
 import com.example.billing_and_statement_generator.dto.v1.PaymentResponseV1DTO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final CardRepository cardRepository;
     private final BillingCycleRepository billingCycleRepository;
     private final PaymentMapper paymentMapper;
-
-    public PaymentService(
-            PaymentRepository paymentRepository,
-            CardRepository cardRepository,
-            BillingCycleRepository billingCycleRepository,
-            PaymentMapper paymentMapper
-    ) {
-        this.paymentRepository = paymentRepository;
-        this.cardRepository = cardRepository;
-        this.billingCycleRepository = billingCycleRepository;
-        this.paymentMapper = paymentMapper;
-    }
+    private final CardService cardService;
 
     // POST /payments
     public PaymentResponseDTO processPayment(PaymentRequestDTO dto) {
@@ -53,6 +47,14 @@ public class PaymentService {
         payment.setPaymentStatus(Payment.PaymentStatus.SUCCESS);
 
         Payment savedPayment = paymentRepository.save(payment);
+
+        //Updates card balance after payment
+        cardService.applyPayment(card.getCardId(),
+                new BigDecimal(dto.getAmountPaid()));
+
+        log.info("Payment processed and card balance updated for cardId={}",
+                card.getCardId());
+
         return paymentMapper.toResponseDTO(savedPayment);
     }
 
@@ -82,6 +84,14 @@ public class PaymentService {
         payment.setPaymentStatus(Payment.PaymentStatus.SUCCESS);
 
         Payment savedPayment = paymentRepository.save(payment);
+
+        //Updates card balance after payment
+        cardService.applyPayment(card.getCardId(),
+                new BigDecimal(dto.getAmountPaid()));
+
+        log.info("Payment V1 processed and card balance updated for cardId={}",
+                card.getCardId());
+
         return paymentMapper.toResponseV1DTO(savedPayment);
     }
 }
