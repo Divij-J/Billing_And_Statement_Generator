@@ -72,7 +72,7 @@ class StatementControllerTest {
                 .build();
     }
 
-    //generateStatement() tests
+    // ── generateStatement() tests ───────────────────────────────────
 
     @Test
     void givenValidRequest_whenGenerateStatementCalled_thenReturns201() {
@@ -109,15 +109,15 @@ class StatementControllerTest {
                 .generateStatement(any(GenerateStatementRequestDTO.class));
     }
 
-    //getStatement() tests
+    // ── getStatement() tests ────────────────────────────────────────
 
     @Test
-    void givenValidCardAndCycleId_whenGetStatementCalled_thenReturns200() {
+    void givenValidRequest_whenGetStatementCalled_thenReturns200() {
         when(statementService.getStatement(cardId, cycleId))
                 .thenReturn(retrieveResponseDTO);
 
         ResponseEntity<RetrieveStatementResponseDTO> response =
-                statementController.getStatement(cardId, cycleId);
+                statementController.getStatement(generateRequestDTO);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -130,24 +130,24 @@ class StatementControllerTest {
     }
 
     @Test
-    void givenValidCardAndCycleId_whenGetStatementCalled_thenReturnsCorrectStatus() {
+    void givenValidRequest_whenGetStatementCalled_thenReturnsCorrectStatus() {
         when(statementService.getStatement(cardId, cycleId))
                 .thenReturn(retrieveResponseDTO);
 
         ResponseEntity<RetrieveStatementResponseDTO> response =
-                statementController.getStatement(cardId, cycleId);
+                statementController.getStatement(generateRequestDTO);
 
         assertThat(response.getBody().getStatementStatus()).isEqualTo("GENERATED");
         verify(statementService, times(1)).getStatement(cardId, cycleId);
     }
 
     @Test
-    void givenValidCardAndCycleId_whenGetStatementCalled_thenReturnsCorrectBalance() {
+    void givenValidRequest_whenGetStatementCalled_thenReturnsCorrectBalance() {
         when(statementService.getStatement(cardId, cycleId))
                 .thenReturn(retrieveResponseDTO);
 
         ResponseEntity<RetrieveStatementResponseDTO> response =
-                statementController.getStatement(cardId, cycleId);
+                statementController.getStatement(generateRequestDTO);
 
         assertThat(response.getBody().getStatementBalance()).isEqualTo("1020.00");
         assertThat(response.getBody().getTotalOutstanding()).isEqualTo("1020.00");

@@ -113,7 +113,7 @@ class PaymentStatementMockMvcTest {
         cardRepository.save(testCard);
     }
 
-    //Payment MockMvc tests
+    // ── Payment MockMvc tests ───────────────────────────────────────
 
     @Test
     void shouldProcessPayment_GivenValidRequest() throws Exception {
@@ -169,8 +169,18 @@ class PaymentStatementMockMvcTest {
         payment.setPaymentMethod(Payment.PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
-        mockMvc.perform(get("/payments/v1/{cardId}", testCard.getCardId())
-                        .with(jwt().jwt(builder -> builder.subject("test-user"))))
+        PaymentRequestDTO historyRequest = PaymentRequestDTO.builder()
+                .cardId(testCard.getCardId().toString())
+                .cycleId(testBillingCycle.getCycleId().toString())
+                .amountPaid("0.00")
+                .paymentType("FULL")
+                .paymentMethod("ONLINE")
+                .build();
+
+        mockMvc.perform(post("/payments/v1/history")
+                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(historyRequest)))
                 .andDo(print())
                 .andExpect(status().isOk());
     }
@@ -189,7 +199,7 @@ class PaymentStatementMockMvcTest {
                 .andExpect(status().isBadRequest());
     }
 
-    //Statement MockMvc tests
+    // ── Statement MockMvc tests ─────────────────────────────────────
 
     @Test
     void shouldGenerateStatement_GivenValidRequest() throws Exception {
@@ -230,10 +240,15 @@ class PaymentStatementMockMvcTest {
         statement.setStatementStatus(Statement.StatementStatus.GENERATED);
         statementRepository.save(statement);
 
-        mockMvc.perform(get("/statements/v1/{cardId}/{cycleId}",
-                        testCard.getCardId(),
-                        testBillingCycle.getCycleId())
-                        .with(jwt().jwt(builder -> builder.subject("test-user"))))
+        GenerateStatementRequestDTO getRequest = GenerateStatementRequestDTO.builder()
+                .cardId(testCard.getCardId().toString())
+                .cycleId(testBillingCycle.getCycleId().toString())
+                .build();
+
+        mockMvc.perform(post("/statements/v1/get")
+                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(getRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statementStatus").value("GENERATED"));

@@ -30,12 +30,22 @@ public class StatementController {
                 .body(statementService.generateStatement(dto));
     }
 
-    @GetMapping("/v1/{cardId}/{cycleId}")
+//    @GetMapping("/v1/{cardId}/{cycleId}")
+//    @Operation(summary = "Get a statement (V1)",
+//            description = "Retrieve a billing statement for a specific card and billing cycle")
+//    public ResponseEntity<RetrieveStatementResponseDTO> getStatement(
+//            @PathVariable UUID cardId,
+//            @PathVariable UUID cycleId) {
+//        return ResponseEntity.ok(statementService.getStatement(cardId, cycleId));
+//    }
+
+    @PostMapping("/v1/get")
     @Operation(summary = "Get a statement (V1)",
             description = "Retrieve a billing statement for a specific card and billing cycle")
     public ResponseEntity<RetrieveStatementResponseDTO> getStatement(
-            @PathVariable UUID cardId,
-            @PathVariable UUID cycleId) {
-        return ResponseEntity.ok(statementService.getStatement(cardId, cycleId));
+            @Valid @RequestBody GenerateStatementRequestDTO dto) {
+        return ResponseEntity.ok(statementService.getStatement(
+                UUID.fromString(dto.getCardId()),
+                UUID.fromString(dto.getCycleId())));
     }
 }
