@@ -31,11 +31,19 @@ public class PaymentController {
                 .body(paymentService.processPayment(dto));
     }
 
-    @GetMapping("/v1/{cardId}")
+//    @GetMapping("/v1/{cardId}")
+//    @Operation(summary = "Get payment history (V1)",
+//            description = "Retrieve all payments made for a specific card")
+//    public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistory(
+//            @PathVariable UUID cardId) {
+//        return ResponseEntity.ok(paymentService.getPaymentHistory(cardId));
+//    }
+    @PostMapping("/v1/history")
     @Operation(summary = "Get payment history (V1)",
             description = "Retrieve all payments made for a specific card")
     public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistory(
-            @PathVariable UUID cardId) {
-        return ResponseEntity.ok(paymentService.getPaymentHistory(cardId));
+            @Valid @RequestBody PaymentRequestDTO dto) {
+        return ResponseEntity.ok(
+                paymentService.getPaymentHistory(UUID.fromString(dto.getCardId())));
     }
 }

@@ -71,7 +71,7 @@ class PaymentControllerTest {
                 .build();
     }
 
-    //processPayment() tests
+    // ── processPayment() tests ──────────────────────────────────────
 
     @Test
     void givenValidPaymentRequest_whenProcessPaymentCalled_thenReturns201() {
@@ -118,7 +118,7 @@ class PaymentControllerTest {
                 .processPayment(any(PaymentRequestDTO.class));
     }
 
-    //getPaymentHistory() tests
+    // ── getPaymentHistory() tests ───────────────────────────────────
 
     @Test
     void givenValidCardId_whenGetPaymentHistoryCalled_thenReturns200() {
@@ -126,7 +126,7 @@ class PaymentControllerTest {
                 .thenReturn(List.of(retrievePaymentHistoryDTO));
 
         ResponseEntity<List<RetrievePaymentHistoryDTO>> response =
-                paymentController.getPaymentHistory(cardId);
+                paymentController.getPaymentHistory(paymentRequestDTO);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -145,7 +145,7 @@ class PaymentControllerTest {
                 .thenReturn(List.of());
 
         ResponseEntity<List<RetrievePaymentHistoryDTO>> response =
-                paymentController.getPaymentHistory(cardId);
+                paymentController.getPaymentHistory(paymentRequestDTO);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEmpty();
