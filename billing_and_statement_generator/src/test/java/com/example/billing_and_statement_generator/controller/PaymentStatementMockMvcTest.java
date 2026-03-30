@@ -1,9 +1,9 @@
 package com.example.billing_and_statement_generator.controller;
 
 import com.example.billing_and_statement_generator.config.TestSecurityConfig;
-import com.example.billing_and_statement_generator.dto.GenerateStatementRequestDTO;
-import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
-import com.example.billing_and_statement_generator.dto.GetPaymentHistoryRequestDTO;
+import com.example.billing_and_statement_generator.dto.statement.GenerateStatementRequestDTO;
+import com.example.billing_and_statement_generator.dto.payment.PaymentRequestDTO;
+import com.example.billing_and_statement_generator.dto.payment.GetPaymentHistoryRequestDTO;
 import com.example.billing_and_statement_generator.entity.*;
 import com.example.billing_and_statement_generator.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package com.example.billing_and_statement_generator.dto;
+package com.example.billing_and_statement_generator.dto.payment;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

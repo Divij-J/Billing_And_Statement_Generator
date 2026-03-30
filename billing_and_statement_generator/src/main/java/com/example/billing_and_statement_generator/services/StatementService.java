@@ -1,8 +1,8 @@
 package com.example.billing_and_statement_generator.services;
 
-import com.example.billing_and_statement_generator.dto.GenerateStatementRequestDTO;
-import com.example.billing_and_statement_generator.dto.GenerateStatementResponseDTO;
-import com.example.billing_and_statement_generator.dto.RetrieveStatementResponseDTO;
+import com.example.billing_and_statement_generator.dto.statement.GenerateStatementRequestDTO;
+import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
+import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Statement;

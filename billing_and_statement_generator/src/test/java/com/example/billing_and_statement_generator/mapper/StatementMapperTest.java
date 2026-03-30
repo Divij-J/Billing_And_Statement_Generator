@@ -1,7 +1,7 @@
 package com.example.billing_and_statement_generator.mapper;
 
-import com.example.billing_and_statement_generator.dto.GenerateStatementResponseDTO;
-import com.example.billing_and_statement_generator.dto.RetrieveStatementResponseDTO;
+import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
+import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Statement;

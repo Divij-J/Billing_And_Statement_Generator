@@ -1,9 +1,9 @@
 package com.example.billing_and_statement_generator.controller;
 
-import com.example.billing_and_statement_generator.dto.GetPaymentHistoryRequestDTO;
-import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
-import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
-import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO;
+import com.example.billing_and_statement_generator.dto.payment.GetPaymentHistoryRequestDTO;
+import com.example.billing_and_statement_generator.dto.payment.PaymentRequestDTO;
+import com.example.billing_and_statement_generator.dto.payment.PaymentResponseDTO;
+import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
 import com.example.billing_and_statement_generator.services.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
