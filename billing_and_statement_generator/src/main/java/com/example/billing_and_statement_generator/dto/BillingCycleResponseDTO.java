@@ -33,6 +33,9 @@ public class BillingCycleResponseDTO{
     private BigDecimal totalInterest;
     private BigDecimal totalOutstanding;
     private BigDecimal minimumDue;
+
+    private BigDecimal lateFee;
+    private BigDecimal cashAdvanceFee;
     private BigDecimal feesApplied;
     //Status
     private String cycleStatus;
