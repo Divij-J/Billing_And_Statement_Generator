@@ -4,9 +4,11 @@ import com.example.billing_and_statement_generator.dto.BillingCycleResponseDTO;
 import com.example.billing_and_statement_generator.dto.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
+import com.example.billing_and_statement_generator.entity.Payment;
 import com.example.billing_and_statement_generator.entity.Transaction;
 import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
 import com.example.billing_and_statement_generator.repository.CardRepository;
+import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import com.example.billing_and_statement_generator.repository.TransactionRepository;
 import com.example.billing_and_statement_generator.util.BillingUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -32,6 +34,7 @@ public class BillingService {
   private final TransactionRepository transactionRepository;
   private final TransactionService transactionService;
   private final CardService cardService;
+  private final PaymentRepository paymentRepository;
 
   @Transactional
   public BillingCycleResponseDTO generateBillingCycle(UUID cardId) {
@@ -64,6 +67,16 @@ public class BillingService {
       List<Transaction> unbilledTxns =
         transactionRepository
           .findByCardCardIdAndBillingCycleIsNull(cardId);
+
+      // 4B. Retrieve all payments made in this cycle
+        List<Payment> payments = paymentRepository
+                .findPaymentsWithinCycle(cardId, cycleStartDate, cycleEndDate);
+
+        BigDecimal totalPayments = payments.stream()
+                .map(Payment::getAmountPaid)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        log.info("Payments applied in cycle: {}", totalPayments);
 
       // 5. Sum purchases and cash advances separately
       BigDecimal totalPurchases = unbilledTxns.stream()
@@ -152,11 +165,12 @@ public class BillingService {
           .add(annualMembershipFee);
 
       // 10. Total outstanding
-      BigDecimal totalOutstanding = previousBalance
-          .add(totalPurchases)
-          .add(totalCashAdvance)
-          .add(totalInterest)
-          .add(totalFees);
+        BigDecimal totalOutstanding = previousBalance
+                .add(totalPurchases)
+                .add(totalCashAdvance)
+                .add(totalInterest)
+                .add(totalFees)
+                .subtract(totalPayments);
 
       // 11. Minimum due = max(5% of totalOutstanding, $100)
       BigDecimal minimumDue =
@@ -190,7 +204,12 @@ public class BillingService {
 
       log.info("/api/billing/generate/{} - cycle {} generated",
                             cardId, saved.getCycleId());
-      return toResponseDTO(saved, unbilledTxns, totalFees);
+
+        // Apply payments if any
+        if (totalPayments.compareTo(BigDecimal.ZERO) > 0) {
+            cardService.applyPayment(cardId, totalPayments);
+        }
+        return toResponseDTO(saved, unbilledTxns, totalFees);
 
     } catch (EntityNotFoundException e) {
       log.error("/api/billing/generate/{} - not found: {}",

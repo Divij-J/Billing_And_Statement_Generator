@@ -37,4 +37,15 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
         "WHERE p.billingCycle.cycleId = :cycleId "  +
         "AND p.paymentStatus = 'SUCCESS'")
     BigDecimal findTotalPaidByCycleId(@Param("cycleId") UUID cycleId);
+
+    //Find payments within a billing cycle
+    @Query("SELECT p FROM Payment p " +
+            "WHERE p.card.cardId = :cardId " +
+            "AND p.paymentStatus = 'SUCCESS' " +
+            "AND p.paymentDate BETWEEN :startDate AND :endDate")
+    List<Payment> findPaymentsWithinCycle(
+            @Param("cardId") UUID cardId,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate
+    );
 }
