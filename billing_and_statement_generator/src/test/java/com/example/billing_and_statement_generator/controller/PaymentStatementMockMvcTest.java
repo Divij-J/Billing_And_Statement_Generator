@@ -3,6 +3,7 @@ package com.example.billing_and_statement_generator.controller;
 import com.example.billing_and_statement_generator.config.TestSecurityConfig;
 import com.example.billing_and_statement_generator.dto.GenerateStatementRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
+import com.example.billing_and_statement_generator.dto.GetPaymentHistoryRequestDTO;
 import com.example.billing_and_statement_generator.entity.*;
 import com.example.billing_and_statement_generator.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -113,7 +114,7 @@ class PaymentStatementMockMvcTest {
         cardRepository.save(testCard);
     }
 
-    // ── Payment MockMvc tests ───────────────────────────────────────
+    //Payment MockMvc tests
 
     @Test
     void shouldProcessPayment_GivenValidRequest() throws Exception {
@@ -169,12 +170,8 @@ class PaymentStatementMockMvcTest {
         payment.setPaymentMethod(Payment.PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
-        PaymentRequestDTO historyRequest = PaymentRequestDTO.builder()
+        GetPaymentHistoryRequestDTO historyRequest = GetPaymentHistoryRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
-                .amountPaid("0.00")
-                .paymentType("FULL")
-                .paymentMethod("ONLINE")
                 .build();
 
         mockMvc.perform(post("/payments/v1/history")
@@ -199,7 +196,7 @@ class PaymentStatementMockMvcTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ── Statement MockMvc tests ─────────────────────────────────────
+    //Statement MockMvc tests
 
     @Test
     void shouldGenerateStatement_GivenValidRequest() throws Exception {
