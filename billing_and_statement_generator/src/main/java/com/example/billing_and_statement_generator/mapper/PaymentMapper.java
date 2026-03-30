@@ -1,8 +1,8 @@
 package com.example.billing_and_statement_generator.mapper;
 
-import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
-import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
-import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO;
+import com.example.billing_and_statement_generator.dto.payment.PaymentRequestDTO;
+import com.example.billing_and_statement_generator.dto.payment.PaymentResponseDTO;
+import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;

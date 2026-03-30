@@ -1,4 +1,4 @@
-package com.example.billing_and_statement_generator.dto;
+package com.example.billing_and_statement_generator.dto.statement;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
