@@ -1,5 +1,6 @@
 package com.example.billing_and_statement_generator.Controller;
 
+import com.example.billing_and_statement_generator.dto.GetPaymentHistoryRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.PaymentResponseDTO;
 import com.example.billing_and_statement_generator.dto.RetrievePaymentHistoryDTO;
@@ -31,18 +32,11 @@ public class PaymentController {
                 .body(paymentService.processPayment(dto));
     }
 
-//    @GetMapping("/v1/{cardId}")
-//    @Operation(summary = "Get payment history (V1)",
-//            description = "Retrieve all payments made for a specific card")
-//    public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistory(
-//            @PathVariable UUID cardId) {
-//        return ResponseEntity.ok(paymentService.getPaymentHistory(cardId));
-//    }
     @PostMapping("/v1/history")
     @Operation(summary = "Get payment history (V1)",
             description = "Retrieve all payments made for a specific card")
     public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistory(
-            @Valid @RequestBody PaymentRequestDTO dto) {
+            @Valid @RequestBody GetPaymentHistoryRequestDTO dto) {
         return ResponseEntity.ok(
                 paymentService.getPaymentHistory(UUID.fromString(dto.getCardId())));
     }
