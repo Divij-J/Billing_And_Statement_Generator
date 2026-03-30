@@ -51,9 +51,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers("/api/auth/token").authenticated()
-                        .requestMatchers("/api/v1/cards/**").hasAuthority("SCOPE_ROLE_CLIENT")
+                        .requestMatchers("/api/cards/**").hasAuthority("SCOPE_ROLE_CLIENT")
                         .requestMatchers("/api/customers/**").hasAuthority("SCOPE_ROLE_CLIENT")
-                        .requestMatchers("/api/v1/transactions/**").hasAuthority("SCOPE_ROLE_CLIENT")
+                        .requestMatchers("/api/transactions/**").hasAuthority("SCOPE_ROLE_CLIENT")
                         .requestMatchers("/api/billing/**").hasAuthority("SCOPE_ROLE_CLIENT")
                         .requestMatchers("/payments/**").hasAuthority("SCOPE_ROLE_CLIENT")
                         .requestMatchers("/statements/**").hasAuthority("SCOPE_ROLE_CLIENT")
