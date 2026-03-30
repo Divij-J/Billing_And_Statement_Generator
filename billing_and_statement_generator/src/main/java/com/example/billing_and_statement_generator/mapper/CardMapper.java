@@ -2,7 +2,6 @@ package com.example.billing_and_statement_generator.mapper;
 
 import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
 import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
-import com.example.billing_and_statement_generator.dto.v1.CreateCardRequestV1DTO;
 import com.example.billing_and_statement_generator.entity.*;
 import org.mapstruct.*;
 
@@ -10,22 +9,9 @@ import org.mapstruct.*;
 public interface CardMapper {
     // DTO to Entity (Create Request DTO)
     @Mappings({
-            // service will set these (the ignore mappings)
-            @Mapping(target = "cardId", ignore = true),
-            @Mapping(target = "cardBalance", ignore = true),
-            @Mapping(target = "active", ignore = true),
-            @Mapping(target = "cashAdvanceBalance", ignore = true),
-            @Mapping(target = "cashAdvanceAPR", ignore = true),
-            @Mapping(target = "minimumDue", ignore = true),
-            @Mapping(target = "annualInterestRate", ignore = true),
-
             @Mapping(target = "customer.customerId", source = "customerId")
     })
     Card toEntity(CreateCardRequestDTO dto);
-
-    // DTO to Entity (Create Request DTO V1)
-    @Mappings({@Mapping(target="customer.customerId", source = "customerId")})
-    Card toEntityV1(CreateCardRequestV1DTO dto);
 
     // Entity to DTO (Response DTO)
     @Mappings({

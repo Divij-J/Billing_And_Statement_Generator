@@ -97,50 +97,6 @@ public class TransactionService {
         return transactionMapper.toResponse(saved);
     }
 
-    /** Payment Creation
-     * When payments are made within the Payment Service,
-     * it calls this method which creates a PAYMENT transaction
-     * DECLINED Payment transactions will still be saved to DB but won't affect Card Balance
-     */
-    @Transactional(
-            noRollbackFor = {
-                CardService.ValidationException.class,
-                CardService.LimitExceededException.class
-            })
-    public void createPayment(UUID cardId, BigDecimal amount){
-        if(amount == null){
-            throw new ValidationException("Payment Amount is required");
-        }
-        if(amount.signum() < 0){
-            throw new ValidationException("Payment Amount must be > 0");
-        }
-
-        Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new NotFoundException("Card not found: " + cardId));
-
-        Transaction tx = new Transaction();
-        tx.setTransactionId(UUID.randomUUID());
-        tx.setCard(card);
-        tx.setAmount(amount);
-        tx.setTransactionDate(LocalDate.now());
-        tx.setMerchantName("CUSTOMER PAYMENT");
-        tx.setTransactionType(Transaction.transactionType.PAYMENT);
-        tx.setStatus(Transaction.Status.PENDING);
-
-        try{
-            BigDecimal newBalance = cardService.applyPayment(cardId, amount);
-            tx.setStatus(Transaction.Status.SENT);
-            log.debug("Transaction PAYMENT created: cardId={}, newBalance={}, amount={}", cardId, newBalance, amount);
-        }
-        catch(Exception e){ // CardService already logs if any errors occur, but still saves transaction as DECLINED
-            tx.setStatus(Transaction.Status.DECLINED);
-            transactionRepository.save(tx);
-            throw e;
-        }
-
-        transactionRepository.save(tx);
-    }
-
     /** Interest Creation
      * When interest are calculated within Billing Service,
      * it calls this method which creates an INTEREST transaction to add to balance

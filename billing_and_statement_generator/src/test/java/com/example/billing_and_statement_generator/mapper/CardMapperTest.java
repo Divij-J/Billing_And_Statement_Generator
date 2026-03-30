@@ -2,7 +2,6 @@ package com.example.billing_and_statement_generator.mapper;
 
 import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
 import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
-import com.example.billing_and_statement_generator.dto.v1.CreateCardRequestV1DTO;
 import com.example.billing_and_statement_generator.entity.Card;
 
 import org.junit.jupiter.api.Test;
@@ -25,15 +24,7 @@ public class CardMapperTest {
                 .cardNumber("4111111111111111")
                 .cardType(Card.CardType.CREDIT)
                 .cardHolderName("Jane Doe")
-                .cardIssueDate(LocalDate.now())
-                .expiryDate(LocalDate.now().plusYears(4))
-                .securityCode("825")
-                .billingCycleDate(LocalDate.of(2026, 3, 23))
-                .creditLimit(BigDecimal.valueOf(1000))
-                .annualInterestRate(BigDecimal.valueOf(0.2))
-                .cashAdvanceLimit(BigDecimal.valueOf(500))
-                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
-                .lateFeeAmount(BigDecimal.ZERO)
+                .securityCode("123")
                 .build();
 
         // Create card according to DTO
@@ -43,13 +34,7 @@ public class CardMapperTest {
         assertEquals(entity.getCardNumber(), dto.getCardNumber(), "Card number does not match Card DTO Request");
         assertEquals(entity.getCardHolderName(), dto.getCardHolderName(), "Card Holder Name does not match Card DTO Request");
         assertEquals(entity.getCardType(), dto.getCardType(), "Card Type does not match Card DTO Request");
-        assertEquals(entity.getExpiryDate(), dto.getExpiryDate(), "Card Expiry Date does not match Card DTO Request");
-        assertEquals(entity.getCardIssueDate(), dto.getCardIssueDate(), "Card Issue Date does not match Card DTO Request");
-        assertEquals(entity.getSecurityCode(), dto.getSecurityCode(), "Card Expiry Date does not match Card DTO Request");
-
-        // Assert server-controlled fields
-        assertNull(entity.getCustomer().getCustomerId());
-        assertNull(entity.getCardBalance());
+        assertEquals(entity.getSecurityCode(), dto.getSecurityCode(),"Card Security Code does not match Card DTO Security Code");
     }
 
     @Test
@@ -94,29 +79,5 @@ public class CardMapperTest {
         assertEquals(dto.getAnnualMembershipFee(), card.getAnnualMembershipFee(), "Card DTO Annual Membership Fee does not match Card Entity Annual Membership Fee");
         assertEquals(dto.getCashAdvanceLimit(), card.getCashAdvanceLimit(), "Card DTO Cash Advance Limit does not match Card Entity Cash Advance Limit");
         assertEquals(dto.getMinimumDue(), card.getMinimumDue(), "Card DTO Minimum Due does not match Card Entity Minimum Due");
-    }
-
-    @Test
-    void testCardDTOtoCardEntityMappingV1() {
-        // Create Card Request
-        CreateCardRequestV1DTO dto = CreateCardRequestV1DTO.builder()
-                .cardNumber("4111111111111111")
-                .cardType(Card.CardType.CREDIT)
-                .cardHolderName("Jane Doe")
-                .securityCode("825")
-                .build();
-
-        // Create card according to DTO
-        Card entity = mapper.toEntityV1(dto);
-
-        // Assert Mapped Fields
-        assertEquals(entity.getCardNumber(), dto.getCardNumber(), "Card number does not match Card DTO Request");
-        assertEquals(entity.getCardHolderName(), dto.getCardHolderName(), "Card Holder Name does not match Card DTO Request");
-        assertEquals(entity.getCardType(), dto.getCardType(), "Card Type does not match Card DTO Request");
-        assertEquals(entity.getSecurityCode(), dto.getSecurityCode(), "Card Expiry Date does not match Card DTO Request");
-
-        // Assert server-controlled fields
-        assertNull(entity.getCustomer().getCustomerId());
-        assertNull(entity.getCardBalance());
     }
 }
