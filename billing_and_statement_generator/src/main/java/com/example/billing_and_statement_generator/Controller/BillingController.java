@@ -39,9 +39,7 @@ public class BillingController {
   // V1 — fee breakdown shown separately (lateFee, cashAdvanceFee, annualMembershipFee)
           @PostMapping("/v1/generate/{cardId}")
   @Operation(
-    summary = "Generate billing cycle V1 — includes fee breakdown",
-                security = @SecurityRequirement(name = "bearerAuth"),
-                tags = {"billing-controller-V1"}
+    summary = "Generate billing cycle V1 — includes fee breakdown"
   )
           public ResponseEntity<BillingCycleResponseDTO> generateBillingCycle(
       @PathVariable UUID cardId) {
@@ -73,9 +71,7 @@ public class BillingController {
     // V1 POST — returns fee breakdown
     @PostMapping("/v1/{cardId}/{cycleId}")
     @Operation(
-            summary = "Get billing cycle V1 — includes fee breakdown",
-            security = @SecurityRequirement(name = "bearerAuth"),
-            tags = {"billing-controller-V1"}
+            summary = "Get billing cycle V1 — includes fee breakdown"
     )
     public ResponseEntity<BillingCycleResponseDTO> getBillingCycleV1(
             @PathVariable UUID cardId,
