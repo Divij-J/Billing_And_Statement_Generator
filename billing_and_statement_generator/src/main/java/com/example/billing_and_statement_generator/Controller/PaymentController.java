@@ -24,7 +24,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/v1")
-    @Operation(summary = "Process a payment (V1)",
+    @Operation(summary = "API Payment - Process a payment (V1)",
             description = "Submit a payment against a billing cycle for a card")
     public ResponseEntity<PaymentResponseDTO> processPayment(
             @Valid @RequestBody PaymentRequestDTO dto) {
@@ -33,7 +33,7 @@ public class PaymentController {
     }
 
     @PostMapping("/v1/history")
-    @Operation(summary = "Get payment history (V1)",
+    @Operation(summary = "API Payment - Get payment history (V1)",
             description = "Retrieve all payments made for a specific card")
     public ResponseEntity<List<RetrievePaymentHistoryDTO>> getPaymentHistory(
             @Valid @RequestBody GetPaymentHistoryRequestDTO dto) {

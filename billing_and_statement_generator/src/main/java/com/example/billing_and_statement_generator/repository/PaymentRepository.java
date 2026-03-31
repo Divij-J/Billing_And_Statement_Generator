@@ -7,45 +7,46 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
-    //Find all payments for a specific card
+    // Find all payments for a specific card
     @Query("SELECT p FROM Payment p WHERE p.card.cardId = :cardId ORDER BY p.paymentDate DESC")
     List<Payment> findByCardId(@Param("cardId") UUID cardId);
 
-    //Find all payments for a specific billing cycle
+    // Find all payments for a specific billing cycle
     @Query("SELECT p FROM Payment p WHERE p.billingCycle.cycleId = :cycleId")
     List<Payment> findByCycleId(@Param("cycleId") UUID cycleId);
 
-    //Find all payments for a specific card in a specific billing cycle
+    // Find all payments for a specific card in a specific billing cycle
     @Query("SELECT p FROM Payment p WHERE p.card.cardId = :cardId AND p.billingCycle.cycleId = :cycleId")
     List<Payment> findByCardIdAndCycleId(
             @Param("cardId") UUID cardId,
             @Param("cycleId") UUID cycleId
     );
 
-    //Find payments by status
+    // Find payments by status
     List<Payment> findByPaymentStatus(Payment.PaymentStatus paymentStatus);
 
-    //Calculate total amount paid for a billing cycle
+    // Calculate total amount paid for a billing cycle
     @Query("SELECT COALESCE(SUM(p.amountPaid), 0) " +
-        "FROM Payment p " +
-        "WHERE p.billingCycle.cycleId = :cycleId "  +
-        "AND p.paymentStatus = 'SUCCESS'")
+            "FROM Payment p " +
+            "WHERE p.billingCycle.cycleId = :cycleId " +
+            "AND p.paymentStatus = 'SUCCESS'")
     BigDecimal findTotalPaidByCycleId(@Param("cycleId") UUID cycleId);
 
-    //Find payments within a billing cycle
+    // Find payments within a billing cycle date range
     @Query("SELECT p FROM Payment p " +
             "WHERE p.card.cardId = :cardId " +
             "AND p.paymentStatus = 'SUCCESS' " +
-            "AND p.paymentDate BETWEEN :startDate AND :endDate")
+            "AND CAST(p.paymentDate AS date) BETWEEN :startDate AND :endDate")
     List<Payment> findPaymentsWithinCycle(
             @Param("cardId") UUID cardId,
-            @Param("startDate") java.time.LocalDate startDate,
-            @Param("endDate") java.time.LocalDate endDate
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
     );
 }
