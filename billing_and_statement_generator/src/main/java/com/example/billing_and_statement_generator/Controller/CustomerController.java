@@ -1,7 +1,9 @@
 package com.example.billing_and_statement_generator.Controller;
 
 import com.example.billing_and_statement_generator.dto.CreateCustomerRequestDTO;
+import com.example.billing_and_statement_generator.dto.CustomerIdDTO;
 import com.example.billing_and_statement_generator.dto.CustomerResponseDTO;
+import com.example.billing_and_statement_generator.dto.UpdateCustomerRequestDTO;
 import com.example.billing_and_statement_generator.services.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,33 +40,35 @@ public class CustomerController {
     return ResponseEntity.status(201).body(response);
   }
 
-    @PostMapping("/{customerId}")
+    @PostMapping("/getCustomerById")
     @Operation(
             summary = "Get customer by ID",
             security = @SecurityRequirement(name = "bearerAuth"),
             description = "Retrieves the customer profile associated with the given customer ID"
     )
     public ResponseEntity<CustomerResponseDTO> getCustomer(
-            @PathVariable UUID customerId) {
-        log.info("POST /api/customers/{} - request received", customerId);
-        CustomerResponseDTO response = customerService.getCustomer(customerId);
-        log.info("POST /api/customers/{} - successfully retrieved", customerId);
+            @Valid @RequestBody CustomerIdDTO customerId) {
+        log.info("POST /api/customers/getCustomerById - request received for customerId={}", customerId.getCustomerId());
+        CustomerResponseDTO response = customerService.getCustomer(customerId.getCustomerId());
+        log.info("POST /api/customers/getCustomerById - successfully retrieved customerId={}", customerId.getCustomerId());
         return ResponseEntity.ok(response);
     }
 
-  @PutMapping("/{customerId}")
+  @PutMapping
   @Operation(
     summary = "Update customer by ID",
                 security = @SecurityRequirement(name = "bearerAuth"),
           description = "Updates the customer profile associated with the given customer ID and returns the updated details"
   )
           public ResponseEntity<CustomerResponseDTO> updateCustomer(
-      @PathVariable UUID customerId,
-      @Valid @RequestBody CreateCustomerRequestDTO request) {
-    log.info("PUT /api/customers/{} - request received", customerId);
+          @Valid @RequestBody UpdateCustomerRequestDTO request) {
+            UUID customerId = request.getCustomerId();
+            CreateCustomerRequestDTO updateData = request.getUpdateData();
+
+      log.info("PUT /api/customers - request received for customerId{}", customerId);
     CustomerResponseDTO response =
-      customerService.updateCustomer(customerId, request);
-    log.info("PUT /api/customers/{} - successfully updated", customerId);
+      customerService.updateCustomer(customerId, updateData);
+    log.info("PUT /api/customers - successfully updated customerId={}", customerId);
     return ResponseEntity.ok(response);
   }
 }
