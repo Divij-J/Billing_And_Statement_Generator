@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -35,26 +36,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestSecurityConfig.class)
 class PaymentStatementMockMvcTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private PaymentRepository paymentRepository;
-
-    @Autowired
-    private CardRepository cardRepository;
-
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private BillingCycleRepository billingCycleRepository;
-
-    @Autowired
-    private StatementRepository statementRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private PaymentRepository paymentRepository;
+    @Autowired private CardRepository cardRepository;
+    @Autowired private CustomerRepository customerRepository;
+    @Autowired private BillingCycleRepository billingCycleRepository;
+    @Autowired private StatementRepository statementRepository;
 
     private Card testCard;
     private BillingCycle testBillingCycle;
@@ -105,7 +93,7 @@ class PaymentStatementMockMvcTest {
         testBillingCycle.setTotalPurchases(new BigDecimal("1000.00"));
         testBillingCycle.setTotalCashAdvance(BigDecimal.ZERO);
         testBillingCycle.setTotalInterest(new BigDecimal("20.00"));
-        testBillingCycle.setTotalOutstanding(new BigDecimal("1020.00"));
+        testBillingCycle.setTotalOutstanding(new BigDecimal("1000.00"));
         testBillingCycle.setMinimumDue(new BigDecimal("100.00"));
         testBillingCycle.setCycleStatus("OPEN");
         billingCycleRepository.save(testBillingCycle);
@@ -114,20 +102,19 @@ class PaymentStatementMockMvcTest {
         cardRepository.save(testCard);
     }
 
-    //Payment MockMvc tests
+    // Payment MockMvc tests
 
     @Test
-    void shouldProcessPayment_GivenValidRequest() throws Exception {
+    void shouldProcessPayment_GivenValidPartialPayment() throws Exception {
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
                 .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("500.00")
-                .paymentType("PARTIAL")
                 .paymentMethod("ONLINE")
                 .build();
 
         mockMvc.perform(post("/payments/v1")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -139,22 +126,63 @@ class PaymentStatementMockMvcTest {
     }
 
     @Test
-    void shouldProcessPaymentWithMinimumType_GivenValidRequest() throws Exception {
+    void shouldProcessPayment_GivenMinimumDueAmount_SetsPaymentTypeMinimum() throws Exception {
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
                 .cycleId(testBillingCycle.getCycleId().toString())
-                .amountPaid("300.00")
-                .paymentType("MINIMUM")
+                .amountPaid("100.00")
                 .paymentMethod("BANK_TRANSFER")
                 .build();
 
         mockMvc.perform(post("/payments/v1")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentType").value("MINIMUM"))
                 .andExpect(jsonPath("$.paymentMethod").value("BANK_TRANSFER"));
+    }
+
+    @Test
+    void shouldProcessFullPayment_AndSetPaymentTypeFull() throws Exception {
+        PaymentRequestDTO request = PaymentRequestDTO.builder()
+                .cardId(testCard.getCardId().toString())
+                .cycleId(testBillingCycle.getCycleId().toString())
+                .amountPaid("1000.00")
+                .paymentMethod("ONLINE")
+                .build();
+
+        mockMvc.perform(post("/payments/v1")
+                        .with(jwt().jwt(b -> b.subject("test-user")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentType").value("FULL"))
+                .andExpect(jsonPath("$.paymentStatus").value("SUCCESS"));
+    }
+
+    @Test
+    void shouldRejectOverpayment_AndNotSavePayment() throws Exception {
+        PaymentRequestDTO request = PaymentRequestDTO.builder()
+                .cardId(testCard.getCardId().toString())
+                .cycleId(testBillingCycle.getCycleId().toString())
+                .amountPaid("9999.00")
+                .paymentMethod("ONLINE")
+                .build();
+
+        try {
+            mockMvc.perform(post("/payments/v1")
+                            .with(jwt().jwt(b -> b.subject("test-user")))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andDo(print())
+                    .andExpect(status().is5xxServerError());
+        } catch (Exception e) {
+            assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
+            assertThat(e.getCause().getMessage()).contains("Payment rejected");
+        }
     }
 
     @Test
@@ -175,7 +203,7 @@ class PaymentStatementMockMvcTest {
                 .build();
 
         mockMvc.perform(post("/payments/v1/history")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(historyRequest)))
                 .andDo(print())
@@ -189,14 +217,14 @@ class PaymentStatementMockMvcTest {
                 .build();
 
         mockMvc.perform(post("/payments/v1")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
-    //Statement MockMvc tests
+    // Statement MockMvc tests
 
     @Test
     void shouldGenerateStatement_GivenValidRequest() throws Exception {
@@ -206,14 +234,13 @@ class PaymentStatementMockMvcTest {
                 .build();
 
         mockMvc.perform(post("/statements/v1/generate")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statementStatus").value("GENERATED"))
-                .andExpect(jsonPath("$.message")
-                        .value("Statement generated successfully"));
+                .andExpect(jsonPath("$.message").value("Statement generated successfully"));
     }
 
     @Test
@@ -243,7 +270,7 @@ class PaymentStatementMockMvcTest {
                 .build();
 
         mockMvc.perform(post("/statements/v1/get")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(getRequest)))
                 .andDo(print())
@@ -258,10 +285,60 @@ class PaymentStatementMockMvcTest {
                 .build();
 
         mockMvc.perform(post("/statements/v1/generate")
-                        .with(jwt().jwt(builder -> builder.subject("test-user")))
+                        .with(jwt().jwt(b -> b.subject("test-user")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldUpdateStatementAfterPayment_WhenStatementExists() throws Exception {
+        Statement statement = new Statement();
+        statement.setStatementId(UUID.randomUUID());
+        statement.setCard(testCard);
+        statement.setBillingCycle(testBillingCycle);
+        statement.setStatementDate(LocalDate.now());
+        statement.setDueDate(LocalDate.now().plusDays(21));
+        statement.setBillingStartDate(LocalDate.now().minusDays(30));
+        statement.setBillingEndDate(LocalDate.now());
+        statement.setStatementBalance(new BigDecimal("1000.00"));
+        statement.setRemainingStatementBalance(new BigDecimal("1000.00"));
+        statement.setMinimumDue(new BigDecimal("100.00"));
+        statement.setTotalInterest(BigDecimal.ZERO);
+        statement.setTotalOutstanding(new BigDecimal("1000.00"));
+        statement.setTotalFeeApplied(BigDecimal.ZERO);
+        statement.setCashAdvanceFee(BigDecimal.ZERO);
+        statement.setCarryForwardBalance(new BigDecimal("1000.00"));
+        statement.setStatementStatus(Statement.StatementStatus.GENERATED);
+        statementRepository.save(statement);
+
+        PaymentRequestDTO request = PaymentRequestDTO.builder()
+                .cardId(testCard.getCardId().toString())
+                .cycleId(testBillingCycle.getCycleId().toString())
+                .amountPaid("1000.00")
+                .paymentMethod("ONLINE")
+                .build();
+
+        mockMvc.perform(post("/payments/v1")
+                        .with(jwt().jwt(b -> b.subject("test-user")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paymentType").value("FULL"));
+
+        mockMvc.perform(post("/statements/v1/get")
+                        .with(jwt().jwt(b -> b.subject("test-user")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                GenerateStatementRequestDTO.builder()
+                                        .cardId(testCard.getCardId().toString())
+                                        .cycleId(testBillingCycle.getCycleId().toString())
+                                        .build())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statementStatus").value("PAID"))
+                .andExpect(jsonPath("$.remainingStatementBalance").value("0.00"));
     }
 }
