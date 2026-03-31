@@ -1,8 +1,9 @@
 package com.example.billing_and_statement_generator.controller;
 
 import com.example.billing_and_statement_generator.Controller.TransactionController;
-import com.example.billing_and_statement_generator.dto.CreateTransactionRequestDTO;
-import com.example.billing_and_statement_generator.dto.CreateTransactionResponseDTO;
+import com.example.billing_and_statement_generator.dto.BillingCycleIdDTO;
+import com.example.billing_and_statement_generator.dto.card.CardIdDTO;
+import com.example.billing_and_statement_generator.dto.transaction.*;
 import com.example.billing_and_statement_generator.entity.Transaction;
 import com.example.billing_and_statement_generator.services.TransactionService;
 
@@ -61,7 +62,7 @@ class TransactionControllerTest {
         when(transactionService.create(any(CreateTransactionRequestDTO.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/transactions/v1")
+        mockMvc.perform(post("/api/transactions/v1/createTransaction")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -70,8 +71,11 @@ class TransactionControllerTest {
     }
 
     @Test
-    void testGetById() throws Exception {
+    void testGetTransactionById() throws Exception {
         UUID txId = UUID.randomUUID();
+
+        TransactionIdDTO request = new TransactionIdDTO();
+        request.setTransactionId(txId);
 
         CreateTransactionResponseDTO response = CreateTransactionResponseDTO.builder()
                 .transactionId(txId)
@@ -81,7 +85,9 @@ class TransactionControllerTest {
 
         when(transactionService.getById(txId)).thenReturn(response);
 
-        mockMvc.perform(post("/api/transactions/v1/" + txId))
+        mockMvc.perform(post("/api/transactions/v1/getTransactionById")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.transactionId").value(txId.toString()));
     }
@@ -90,6 +96,9 @@ class TransactionControllerTest {
     void testListByCard() throws Exception {
         UUID cardId = UUID.randomUUID();
 
+        CardIdDTO request = new CardIdDTO();
+        request.setCardId(cardId);
+
         List<CreateTransactionResponseDTO> list = List.of(
                 CreateTransactionResponseDTO.builder().transactionId(UUID.randomUUID()).cardId(cardId).build(),
                 CreateTransactionResponseDTO.builder().transactionId(UUID.randomUUID()).cardId(cardId).build()
@@ -97,7 +106,9 @@ class TransactionControllerTest {
 
         when(transactionService.listByCard(cardId)).thenReturn(list);
 
-        mockMvc.perform(post("/api/transactions/v1/card/" + cardId))
+        mockMvc.perform(post("/api/transactions/v1/getTransactionsByCardId")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
@@ -106,13 +117,18 @@ class TransactionControllerTest {
     void testListByCycle() throws Exception {
         UUID cycleId = UUID.randomUUID();
 
+        BillingCycleIdDTO request = new BillingCycleIdDTO();
+        request.setCycleId(cycleId);
+
         List<CreateTransactionResponseDTO> list = List.of(
                 CreateTransactionResponseDTO.builder().transactionId(UUID.randomUUID()).build()
         );
 
         when(transactionService.listByCycle(cycleId)).thenReturn(list);
 
-        mockMvc.perform(post("/api/transactions/v1/billing-cycle/" + cycleId))
+        mockMvc.perform(post("/api/transactions/v1/getTransactionsByBillingCycle")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -121,22 +137,21 @@ class TransactionControllerTest {
     void testListByDateRange() throws Exception {
         UUID cardId = UUID.randomUUID();
 
+        GetTransactionsBetweenDatesRequestDTO request = new GetTransactionsBetweenDatesRequestDTO();
+        request.setCardId(cardId);
+        request.setStartDate(LocalDate.of(2024, 1, 1));
+        request.setEndDate(LocalDate.of(2024, 1, 31));
+
         List<CreateTransactionResponseDTO> list = List.of(
-                CreateTransactionResponseDTO.builder()
-                        .transactionId(UUID.randomUUID())
-                        .cardId(cardId)
-                        .build()
+                CreateTransactionResponseDTO.builder().transactionId(UUID.randomUUID()).cardId(cardId).build()
         );
 
-        when(transactionService.listByCardAndDateRange(
-                eq(cardId),
-                any(LocalDate.class),
-                any(LocalDate.class)
-        )).thenReturn(list);
+        when(transactionService.listByCardAndDateRange(eq(cardId), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(list);
 
-        mockMvc.perform(post("/api/transactions/v1/card/range/" + cardId)
-                        .param("start", "2024-01-01")
-                        .param("end", "2024-01-31"))
+        mockMvc.perform(post("/api/transactions/v1/getTransactionsWithinDateRange")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -146,17 +161,19 @@ class TransactionControllerTest {
         UUID cardId = UUID.randomUUID();
         UUID cycleId = UUID.randomUUID();
 
+        GetTransactionsByCardIdCycleIdRequestDTO request =
+                new GetTransactionsByCardIdCycleIdRequestDTO(cardId, cycleId);
+
         List<CreateTransactionResponseDTO> list = List.of(
-                CreateTransactionResponseDTO.builder()
-                        .transactionId(UUID.randomUUID())
-                        .cardId(cardId)
-                        .build()
+                CreateTransactionResponseDTO.builder().transactionId(UUID.randomUUID()).cardId(cardId).build()
         );
 
         when(transactionService.listByCardAndBillingCycle(cardId, cycleId))
                 .thenReturn(list);
 
-        mockMvc.perform(post("/api/transactions/v1/card/billing-cycle/" + cardId + "/" + cycleId))
+        mockMvc.perform(post("/api/transactions/v1/getTransactionsByCardAndCycleID")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }

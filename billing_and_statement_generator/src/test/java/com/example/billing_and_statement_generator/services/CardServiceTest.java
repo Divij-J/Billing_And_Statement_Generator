@@ -1,7 +1,7 @@
 package com.example.billing_and_statement_generator.services;
 
-import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
-import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardRequestDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardResponseDTO;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Customer;
 import com.example.billing_and_statement_generator.mapper.CardMapper;
@@ -199,15 +199,15 @@ class CardServiceTest {
     @Test
     void testGetById() {
         UUID cardId = UUID.randomUUID();
-
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(cardEntity));
 
-        CreateCardResponseDTO dto = new CreateCardResponseDTO();
-        when(cardMapper.toResponse(cardEntity)).thenReturn(dto);
-
+        CreateCardResponseDTO responseDTO = new CreateCardResponseDTO();
+        when(cardMapper.toResponse(cardEntity)).thenReturn(responseDTO);
         CreateCardResponseDTO result = cardService.getById(cardId);
 
         assertNotNull(result, "Expected non-null response when retrieving card by ID");
+        verify(cardRepository).findById(cardId);
+        verify(cardMapper).toResponse(cardEntity);
     }
 
     @Test

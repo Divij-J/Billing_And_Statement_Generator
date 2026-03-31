@@ -1,8 +1,11 @@
 package com.example.billing_and_statement_generator.controller;
 
 import com.example.billing_and_statement_generator.Controller.CardController;
-import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
-import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.CustomerIdDTO;
+import com.example.billing_and_statement_generator.dto.card.CardIdDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardRequestDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.card.GetCardBalanceResponseDTO;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.services.CardService;
 
@@ -25,7 +28,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -60,7 +62,7 @@ class CardControllerTest {
         Mockito.when(cardService.create(any(CreateCardRequestDTO.class)))
                 .thenReturn(responseDTO);
 
-        mockMvc.perform(post("/api/cards/v1")
+        mockMvc.perform(post("/api/cards/v1/createCard")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -69,8 +71,12 @@ class CardControllerTest {
     }
 
     @Test
-    void testGetCard() throws Exception {
+    void testGetCardInfo() throws Exception {
         UUID cardId = UUID.randomUUID();
+
+        CardIdDTO request = new CardIdDTO();
+        request.setCardId(cardId);
+
         CreateCardResponseDTO responseDTO = CreateCardResponseDTO.builder()
                 .cardId(cardId)
                 .customerId(UUID.randomUUID())
@@ -78,7 +84,9 @@ class CardControllerTest {
 
         Mockito.when(cardService.getById(cardId)).thenReturn(responseDTO);
 
-        mockMvc.perform(post("/api/cards/v1/" + cardId))
+        mockMvc.perform(post("/api/cards/v1/getCardInfo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cardId").value(cardId.toString()));
     }
@@ -87,26 +95,49 @@ class CardControllerTest {
     void testGetCardsByCustomer() throws Exception {
         UUID customerId = UUID.randomUUID();
 
-        CreateCardResponseDTO card1 = CreateCardResponseDTO.builder().cardId(UUID.randomUUID()).customerId(customerId).build();
-        CreateCardResponseDTO card2 = CreateCardResponseDTO.builder().cardId(UUID.randomUUID()).customerId(customerId).build();
+        CustomerIdDTO request = new CustomerIdDTO();
+        request.setCustomerId(customerId);
+
+        CreateCardResponseDTO card1 =
+                CreateCardResponseDTO.builder().cardId(UUID.randomUUID()).customerId(customerId).build();
+
+        CreateCardResponseDTO card2 =
+                CreateCardResponseDTO.builder().cardId(UUID.randomUUID()).customerId(customerId).build();
 
         Mockito.when(cardService.getByCustomer(customerId))
                 .thenReturn(List.of(card1, card2));
 
-        mockMvc.perform(post("/api/cards/v1/customer/cards/" + customerId))
+        mockMvc.perform(post("/api/cards/v1/getCardsByCustomerId")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test
-    void testGetBalance() throws Exception {
+    void testGetCardBalanceByCardId() throws Exception {
         UUID cardId = UUID.randomUUID();
 
-        Mockito.when(cardService.getTotalBalance(cardId))
-                .thenReturn(BigDecimal.valueOf(250.00));
+        CardIdDTO request = new CardIdDTO();
+        request.setCardId(cardId);
 
-        mockMvc.perform(post("/api/cards/v1/balance/" + cardId))
+        GetCardBalanceResponseDTO response =
+                GetCardBalanceResponseDTO.builder()
+                        .cardId(cardId)
+                        .cardBalance(BigDecimal.valueOf(120.00))
+                        .cashAdvanceBalance(BigDecimal.valueOf(30.00))
+                        .totalBalance(BigDecimal.valueOf(150.00))
+                        .build();
+
+        Mockito.when(cardService.getBalances(cardId)).thenReturn(response);
+
+        mockMvc.perform(post("/api/cards/v1/getCardBalanceByCardId")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("250.0"));
+                .andExpect(jsonPath("$.cardId").value(cardId.toString()))
+                .andExpect(jsonPath("$.cardBalance").value("120.0"))
+                .andExpect(jsonPath("$.cashAdvanceBalance").value("30.0"))
+                .andExpect(jsonPath("$.totalBalance").value("150.0"));
     }
 }

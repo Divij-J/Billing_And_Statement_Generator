@@ -1,11 +1,9 @@
 package com.example.billing_and_statement_generator.mapper;
 
-import com.example.billing_and_statement_generator.dto.CreateTransactionRequestDTO;
-import com.example.billing_and_statement_generator.dto.CreateTransactionResponseDTO;
-import com.example.billing_and_statement_generator.entity.Card;
+import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionRequestDTO;
+import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.Transaction;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
