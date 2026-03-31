@@ -22,7 +22,7 @@ public class StatementController {
     private final StatementService statementService;
 
     @PostMapping("/v1/generate")
-    @Operation(summary = "Generate a statement (V1)",
+    @Operation(summary = "API Statement - Generate a statement (V1)",
             description = "Generate a billing statement for a specific card and billing cycle")
     public ResponseEntity<GenerateStatementResponseDTO> generateStatement(
             @Valid @RequestBody GenerateStatementRequestDTO dto) {
@@ -31,7 +31,7 @@ public class StatementController {
     }
 
     @PostMapping("/v1/get")
-    @Operation(summary = "Get a statement (V1)",
+    @Operation(summary = "API Statement - Get a statement (V1)",
             description = "Retrieve a billing statement for a specific card and billing cycle")
     public ResponseEntity<RetrieveStatementResponseDTO> getStatement(
             @Valid @RequestBody GenerateStatementRequestDTO dto) {
