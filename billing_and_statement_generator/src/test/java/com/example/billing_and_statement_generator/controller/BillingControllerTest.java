@@ -65,7 +65,7 @@ class BillingControllerTest {
 //    }
 
     // ------------------------------------------------------------
-    // POST /api/billing/v1/generate/{cardId}
+    // POST /api/billing/v1/GenerateBillingCycleFeeBreakdown
     // ------------------------------------------------------------
     @WithMockUser
     @Test
@@ -76,14 +76,14 @@ class BillingControllerTest {
         response.setCycleId(UUID.randomUUID());
         response.setCardId(cardId);
         response.setCycleStatus("OPEN");
-
-//        Mockito.when(billingService.generateBillingCycleV1(cardId))
-//                .thenReturn(response);
         Mockito.when(billingService.generateBillingCycle(cardId)).thenReturn(response);
 
+        String body = "{ \"cardId\": \"" + cardId + "\" }";
 
-        mockMvc.perform(post("/api/billing/v1/generate/" + cardId)
-                        .with(csrf()))
+        mockMvc.perform(post("/api/billing/v1/GenerateBillingCycleFeeBreakdown")
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.cycleId").value(response.getCycleId().toString()))
                 .andExpect(jsonPath("$.cardId").value(cardId.toString()));
@@ -116,7 +116,7 @@ class BillingControllerTest {
 //    }
 
     // ------------------------------------------------------------
-    // POST /api/billing/v1/{cardId}/{cycleId}
+    // POST /api/billing/v1/GetBillingCycleByCardAndCycleId
     // ------------------------------------------------------------
     @WithMockUser
     @Test
@@ -133,9 +133,13 @@ class BillingControllerTest {
 //                .thenReturn(response);
         Mockito.when(billingService.getBillingCycle(cardId, cycleId)).thenReturn(response);
 
-        mockMvc.perform(post("/api/billing/v1/" + cardId + "/" + cycleId)
+
+        String body = "{ \"cardId\": \"" + cardId + "\", \"cycleId\": \"" + cycleId + "\" }";
+
+        mockMvc.perform(post("/api/billing/v1/GetBillingCycleByCardAndCycleId")
                         .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
                 .andExpect(jsonPath("$.cardId").value(cardId.toString()))

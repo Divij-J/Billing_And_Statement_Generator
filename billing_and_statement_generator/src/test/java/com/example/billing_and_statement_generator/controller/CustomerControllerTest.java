@@ -74,7 +74,7 @@ class CustomerControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: POST /api/customers/{id}
+    // TEST: POST /api/customers/getCustomerById
     // -------------------------------------------------------------------------
     @WithMockUser
     @Test
@@ -89,9 +89,12 @@ class CustomerControllerTest {
 
         Mockito.when(customerService.getCustomer(id)).thenReturn(response);
 
-        mockMvc.perform(post("/api/customers/" + id)
+        String body = "{ \"customerId\": \"" + id + "\" }";
+
+        mockMvc.perform(post("/api/customers/getCustomerById")
                         .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customerId").value(id.toString()))
                 .andExpect(jsonPath("$.firstName").value("Jane"))
@@ -99,7 +102,7 @@ class CustomerControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: PUT /api/customers/{id}
+    // TEST: PUT /api/customers/
     // -------------------------------------------------------------------------
     @WithMockUser
     @Test
@@ -126,10 +129,21 @@ class CustomerControllerTest {
         Mockito.when(customerService.updateCustomer(eq(id), any(CreateCustomerRequestDTO.class)))
                 .thenReturn(updated);
 
-        mockMvc.perform(put("/api/customers/" + id)
-                        .with(csrf()) // Required for PUT
+        // Build request body for UpdateCustomerRequestDTO
+        String body = """
+            {
+              "customerId": "%s",
+              "updateData": %s
+            }
+            """.formatted(
+                id.toString(),
+                objectMapper.writeValueAsString(request)
+        );
+
+        mockMvc.perform(put("/api/customers")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customerId").value(id.toString()))
                 .andExpect(jsonPath("$.firstName").value("Updated"))
