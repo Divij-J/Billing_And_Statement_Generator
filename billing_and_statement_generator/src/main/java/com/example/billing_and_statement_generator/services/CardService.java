@@ -1,7 +1,8 @@
 package com.example.billing_and_statement_generator.services;
 
-import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
-import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardRequestDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.card.GetCardBalanceResponseDTO;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Customer;
 import com.example.billing_and_statement_generator.mapper.CardMapper;
@@ -273,9 +274,17 @@ public class CardService {
 
     // Reads this card's balance
     @Transactional(readOnly = true)
-    public BigDecimal getTotalBalance(UUID cardId) {
+    public GetCardBalanceResponseDTO getBalances(UUID cardId) {
         Card card = loadCard(cardId);
-        return card.getCardBalance().add(card.getCashAdvanceBalance());
+
+        GetCardBalanceResponseDTO dto = new GetCardBalanceResponseDTO();
+        dto.setCardId(cardId);
+        dto.setCardBalance(card.getCardBalance());
+        dto.setCashAdvanceBalance(card.getCashAdvanceBalance());
+
+        BigDecimal total = card.getCardBalance().add(card.getCashAdvanceBalance());
+        dto.setTotalBalance(total);
+        return dto;
     }
 
     // Helper method to check if card exists, otherwise loads the Card's info

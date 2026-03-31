@@ -1,7 +1,7 @@
 package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.BillingCycleResponseDTO;
-import com.example.billing_and_statement_generator.dto.CreateTransactionResponseDTO;
+import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;

@@ -1,4 +1,4 @@
-package com.example.billing_and_statement_generator.dto;
+package com.example.billing_and_statement_generator.dto.card;
 
 import com.example.billing_and_statement_generator.entity.Card;
 import lombok.*;

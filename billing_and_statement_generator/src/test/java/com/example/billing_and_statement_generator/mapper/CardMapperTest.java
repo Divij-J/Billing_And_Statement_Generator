@@ -1,7 +1,7 @@
 package com.example.billing_and_statement_generator.mapper;
 
-import com.example.billing_and_statement_generator.dto.CreateCardRequestDTO;
-import com.example.billing_and_statement_generator.dto.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardRequestDTO;
+import com.example.billing_and_statement_generator.dto.card.CreateCardResponseDTO;
 import com.example.billing_and_statement_generator.entity.Card;
 
 import org.junit.jupiter.api.Test;

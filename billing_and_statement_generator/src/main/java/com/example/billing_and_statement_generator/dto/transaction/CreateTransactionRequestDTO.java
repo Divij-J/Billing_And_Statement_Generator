@@ -1,4 +1,4 @@
-package com.example.billing_and_statement_generator.dto;
+package com.example.billing_and_statement_generator.dto.transaction;
 
 import com.example.billing_and_statement_generator.entity.Transaction.*;
 
@@ -13,22 +13,22 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class CreateTransactionRequestDTO {
-    @NotNull
+    @NotNull(message = "Card ID is required")
     private UUID cardId;
 
-    @NotNull
+    @NotNull(message = "Transaction Date is required")
     @PastOrPresent
     private LocalDate transactionDate;
 
-    @NotNull
+    @NotNull(message = "Amount is required")
     @DecimalMin("0.01") //transaction is at least $0.01
     @Digits(integer = 12, fraction = 2)
     private BigDecimal amount;
 
-    @NotBlank
+    @NotBlank(message = "Merchant name is required")
     @Size(max = 140)
     private String merchantName;
 
-    @NotNull
+    @NotNull(message = "Transaction Type is required")
     private transactionType transactionType;
 }

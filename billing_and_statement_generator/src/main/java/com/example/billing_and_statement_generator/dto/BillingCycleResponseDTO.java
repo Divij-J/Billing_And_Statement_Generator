@@ -1,5 +1,6 @@
 package com.example.billing_and_statement_generator.dto;
 
+import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
