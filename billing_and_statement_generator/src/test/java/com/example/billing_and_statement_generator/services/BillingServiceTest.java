@@ -6,6 +6,7 @@ import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Transaction;
 import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
 import com.example.billing_and_statement_generator.repository.CardRepository;
+import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import com.example.billing_and_statement_generator.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,8 @@ class BillingServiceTest {
 
     @Mock
     private CardService cardService;
+
+    @Mock private PaymentRepository paymentRepository;
 
     @InjectMocks
     private BillingService billingService;
@@ -90,6 +93,9 @@ class BillingServiceTest {
                 .thenReturn(Optional.of(lastCycle));
         when(transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId))
                 .thenReturn(unbilledTransactions);
+
+        when(paymentRepository.findPaymentsWithinCycle(any(), any(), any()))
+                .thenReturn(List.of());
 
         // Stub billing cycle save
         BillingCycle savedCycle = BillingCycle.builder()
