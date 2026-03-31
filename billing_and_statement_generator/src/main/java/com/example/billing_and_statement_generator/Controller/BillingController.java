@@ -20,26 +20,11 @@ public class BillingController {
 
   private final BillingService billingService;
 
-//  // Original — combined feesApplied in response
-//          @PostMapping("/generate/{cardId}")
-//  @Operation(
-//    summary = "Generate billing cycle for a card",
-//                security = @SecurityRequirement(name = "bearerAuth")
-//  )
-//          public ResponseEntity<BillingCycleResponseDTO> generateBillingCycle(
-//      @PathVariable UUID cardId) {
-//    log.info("POST /api/billing/generate/{} - request received", cardId);
-//    BillingCycleResponseDTO response =
-//      billingService.generateBillingCycle(cardId);
-//    log.info("POST /api/billing/generate/{} - cycle {} generated",
-//                      cardId, response.getCycleId());
-//    return ResponseEntity.status(201).body(response);
-//  }
-
   // V1 — fee breakdown shown separately (lateFee, cashAdvanceFee, annualMembershipFee)
           @PostMapping("/v1/generate/{cardId}")
   @Operation(
-    summary = "Generate billing cycle V1 — includes fee breakdown"
+    summary = "Generate billing cycle V1 — includes fee breakdown",
+          description = "Generates a billing cycle and returns fee details broken down by type"
   )
           public ResponseEntity<BillingCycleResponseDTO> generateBillingCycle(
       @PathVariable UUID cardId) {
@@ -51,27 +36,11 @@ public class BillingController {
     return ResponseEntity.status(201).body(response);
   }
 
-//    // Original POST
-//    @PostMapping("/{cardId}/{cycleId}")
-//    @Operation(
-//            summary = "Get billing cycle by card and cycle ID",
-//            security = @SecurityRequirement(name = "bearerAuth")
-//    )
-//    public ResponseEntity<BillingCycleResponseDTO> getBillingCycle(
-//            @PathVariable UUID cardId,
-//            @PathVariable UUID cycleId) {
-//        log.info("POST /api/billing/{}/{} - request received", cardId, cycleId);
-//        BillingCycleResponseDTO response =
-//                billingService.getBillingCycle(cardId, cycleId);
-//        log.info("POST /api/billing/{}/{} - successfully retrieved",
-//                cardId, cycleId);
-//        return ResponseEntity.ok(response);
-//    }
-
     // V1 POST — returns fee breakdown
     @PostMapping("/v1/{cardId}/{cycleId}")
     @Operation(
-            summary = "Get billing cycle V1 — includes fee breakdown"
+            summary = "Get billing cycle V1 — includes fee breakdown",
+            description = "Get billing cycle by card and cycle ID"
     )
     public ResponseEntity<BillingCycleResponseDTO> getBillingCycleV1(
             @PathVariable UUID cardId,

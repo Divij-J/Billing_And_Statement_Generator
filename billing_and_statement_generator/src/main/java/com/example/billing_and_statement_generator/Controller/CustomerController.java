@@ -25,7 +25,8 @@ public class CustomerController {
   @PostMapping
   @Operation(
     summary = "Create a new customer",
-                security = @SecurityRequirement(name = "bearerAuth")
+                security = @SecurityRequirement(name = "bearerAuth"),
+          description = "Creates a new customer and returns the generated customer details"
   )
           public ResponseEntity<CustomerResponseDTO> createCustomer(
       @Valid @RequestBody CreateCustomerRequestDTO request) {
@@ -40,7 +41,8 @@ public class CustomerController {
     @PostMapping("/{customerId}")
     @Operation(
             summary = "Get customer by ID",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = "bearerAuth"),
+            description = "Retrieves the customer profile associated with the given customer ID"
     )
     public ResponseEntity<CustomerResponseDTO> getCustomer(
             @PathVariable UUID customerId) {
@@ -53,7 +55,8 @@ public class CustomerController {
   @PutMapping("/{customerId}")
   @Operation(
     summary = "Update customer by ID",
-                security = @SecurityRequirement(name = "bearerAuth")
+                security = @SecurityRequirement(name = "bearerAuth"),
+          description = "Updates the customer profile associated with the given customer ID and returns the updated details"
   )
           public ResponseEntity<CustomerResponseDTO> updateCustomer(
       @PathVariable UUID customerId,
