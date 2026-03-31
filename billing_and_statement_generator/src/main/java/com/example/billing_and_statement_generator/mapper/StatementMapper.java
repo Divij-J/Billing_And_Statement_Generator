@@ -2,17 +2,22 @@ package com.example.billing_and_statement_generator.mapper;
 
 import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
+import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Statement;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class StatementMapper {
+
+    private final TransactionMapper transactionMapper;
 
     public Statement toEntity(
             Card card,
@@ -27,20 +32,13 @@ public class StatementMapper {
             BigDecimal carryForwardBalance
     ) {
         return Statement.builder()
-                // Server generates statementId
                 .statementId(UUID.randomUUID())
                 .card(card)
                 .billingCycle(billingCycle)
-
-                // Use the provided dates
-                .statementDate(LocalDate.now())
+                .statementDate(java.time.LocalDate.now())
                 .dueDate(billingCycle.getDueDate())
-
-                // These align with the cycle (source of truth)
                 .billingStartDate(billingCycle.getCycleStartDate())
                 .billingEndDate(billingCycle.getCycleEndDate())
-
-                // Calculated fields from service
                 .statementBalance(statementBalance)
                 .remainingStatementBalance(remainingStatementBalance)
                 .minimumDue(minimumDue)
@@ -49,8 +47,6 @@ public class StatementMapper {
                 .totalFeeApplied(totalFeeApplied)
                 .cashAdvanceFee(cashAdvanceFee)
                 .carryForwardBalance(carryForwardBalance)
-
-                // Initial status
                 .statementStatus(Statement.StatementStatus.GENERATED)
                 .build();
     }
@@ -65,7 +61,9 @@ public class StatementMapper {
                 .build();
     }
 
-    public RetrieveStatementResponseDTO toRetrieveResponseDTO(Statement statement) {
+    public RetrieveStatementResponseDTO toRetrieveResponseDTO(
+            Statement statement,
+            List<CreateTransactionResponseDTO> transactions) {
         return RetrieveStatementResponseDTO.builder()
                 .statementId(statement.getStatementId().toString())
                 .cycleId(statement.getBillingCycle().getCycleId().toString())
@@ -83,6 +81,7 @@ public class StatementMapper {
                 .cashAdvanceFee(statement.getCashAdvanceFee().toString())
                 .carryForwardBalance(statement.getCarryForwardBalance().toString())
                 .statementStatus(statement.getStatementStatus().toString())
+                .transactions(transactions)
                 .build();
     }
 }

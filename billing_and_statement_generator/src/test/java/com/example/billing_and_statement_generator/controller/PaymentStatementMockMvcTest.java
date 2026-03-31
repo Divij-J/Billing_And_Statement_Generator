@@ -1,9 +1,9 @@
 package com.example.billing_and_statement_generator.controller;
 
 import com.example.billing_and_statement_generator.config.TestSecurityConfig;
+import com.example.billing_and_statement_generator.dto.card.CardIdDTO;
 import com.example.billing_and_statement_generator.dto.statement.GenerateStatementRequestDTO;
 import com.example.billing_and_statement_generator.dto.payment.PaymentRequestDTO;
-import com.example.billing_and_statement_generator.dto.payment.GetPaymentHistoryRequestDTO;
 import com.example.billing_and_statement_generator.entity.*;
 import com.example.billing_and_statement_generator.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,6 +43,7 @@ class PaymentStatementMockMvcTest {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private BillingCycleRepository billingCycleRepository;
     @Autowired private StatementRepository statementRepository;
+    @Autowired private TransactionRepository transactionRepository;
 
     private Card testCard;
     private BillingCycle testBillingCycle;
@@ -198,8 +199,8 @@ class PaymentStatementMockMvcTest {
         payment.setPaymentMethod(Payment.PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
-        GetPaymentHistoryRequestDTO historyRequest = GetPaymentHistoryRequestDTO.builder()
-                .cardId(testCard.getCardId().toString())
+        CardIdDTO historyRequest = CardIdDTO.builder()
+                .cardId(testCard.getCardId())
                 .build();
 
         mockMvc.perform(post("/payments/v1/history")
@@ -245,6 +246,17 @@ class PaymentStatementMockMvcTest {
 
     @Test
     void shouldGetStatement_GivenValidCardAndCycleId() throws Exception {
+        Transaction tx = new Transaction();
+        tx.setTransactionId(UUID.randomUUID());
+        tx.setCard(testCard);
+        tx.setBillingCycle(testBillingCycle);
+        tx.setTransactionDate(LocalDate.now().minusDays(5));
+        tx.setTransactionType(Transaction.transactionType.PURCHASE);
+        tx.setAmount(new BigDecimal("500.00"));
+        tx.setMerchantName("Amazon");
+        tx.setStatus(Transaction.Status.SENT);
+        transactionRepository.save(tx);
+
         Statement statement = new Statement();
         statement.setStatementId(UUID.randomUUID());
         statement.setCard(testCard);
@@ -275,7 +287,11 @@ class PaymentStatementMockMvcTest {
                         .content(objectMapper.writeValueAsString(getRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statementStatus").value("GENERATED"));
+                .andExpect(jsonPath("$.statementStatus").value("GENERATED"))
+                .andExpect(jsonPath("$.transactions").isArray())
+                .andExpect(jsonPath("$.transactions.length()").value(1))
+                .andExpect(jsonPath("$.transactions[0].merchantName").value("Amazon"))
+                .andExpect(jsonPath("$.transactions[0].amount").value(500.00));
     }
 
     @Test
