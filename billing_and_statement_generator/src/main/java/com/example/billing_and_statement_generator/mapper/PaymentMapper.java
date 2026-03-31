@@ -15,6 +15,11 @@ import java.util.UUID;
 @Component
 public class PaymentMapper {
 
+    /**
+     * Maps a PaymentRequestDTO to a Payment entity.
+     * paymentType and paymentStatus are intentionally NOT set here
+     * they are determined by the service layer based on business logic.
+     */
     public Payment toEntity(
             PaymentRequestDTO dto,
             Card card,
@@ -26,21 +31,11 @@ public class PaymentMapper {
                 .billingCycle(billingCycle)
                 .amountPaid(new BigDecimal(dto.getAmountPaid()))
                 .paymentDate(LocalDateTime.now())
-                .paymentType(parsePaymentType(dto.getPaymentType()))
+                // paymentType set by service (FULL / PARTIAL / MINIMUM)
                 .paymentStatus(Payment.PaymentStatus.PENDING)
                 .paymentMethod(dto.getPaymentMethod() != null
                         ? parsePaymentMethod(dto.getPaymentMethod()) : null)
                 .build();
-    }
-
-    private Payment.PaymentType parsePaymentType(String type) {
-        try {
-            return Payment.PaymentType.valueOf(type.toUpperCase().trim());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException(
-                    "Invalid payment type: " + type +
-                            ". Valid values are: MINIMUM, FULL, PARTIAL");
-        }
     }
 
     private Payment.PaymentMethod parsePaymentMethod(String method) {

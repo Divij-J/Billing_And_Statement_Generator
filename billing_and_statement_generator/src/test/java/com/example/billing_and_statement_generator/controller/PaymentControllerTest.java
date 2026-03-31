@@ -44,21 +44,22 @@ class PaymentControllerTest {
         cycleId = UUID.randomUUID();
         paymentId = UUID.randomUUID();
 
+        // paymentType removed from DTO — server determines it
         paymentRequestDTO = PaymentRequestDTO.builder()
                 .cardId(cardId.toString())
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
-                .paymentType("FULL")
                 .paymentMethod("ONLINE")
                 .build();
 
+        // Response still carries server-determined paymentType
         paymentResponseDTO = PaymentResponseDTO.builder()
                 .paymentId(paymentId.toString())
                 .cardId(cardId.toString())
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
-                .paymentType("FULL")
-                .paymentStatus("SUCCESS")
+                .paymentType("PARTIAL")  // set by service
+                .paymentStatus("SUCCESS") // set by service
                 .paymentMethod("ONLINE")
                 .build();
 
@@ -71,13 +72,13 @@ class PaymentControllerTest {
                 .cardId(cardId.toString())
                 .cycleId(cycleId.toString())
                 .amountPaid("500.00")
-                .paymentType("FULL")
+                .paymentType("PARTIAL")
                 .paymentStatus("SUCCESS")
                 .paymentMethod("ONLINE")
                 .build();
     }
 
-    //processPayment() tests
+    // processPayment()
 
     @Test
     void givenValidPaymentRequest_whenProcessPaymentCalled_thenReturns201() {
@@ -98,17 +99,16 @@ class PaymentControllerTest {
     }
 
     @Test
-    void givenValidPaymentRequest_whenProcessPaymentCalled_thenReturnsCorrectPaymentType() {
+    void givenValidPaymentRequest_whenProcessPaymentCalled_thenServerDeterminesPaymentType() {
         when(paymentService.processPayment(any(PaymentRequestDTO.class)))
                 .thenReturn(paymentResponseDTO);
 
         ResponseEntity<PaymentResponseDTO> response =
                 paymentController.processPayment(paymentRequestDTO);
 
-        assertThat(response.getBody().getPaymentType()).isEqualTo("FULL");
-        assertThat(response.getBody().getPaymentMethod()).isEqualTo("ONLINE");
-        verify(paymentService, times(1))
-                .processPayment(any(PaymentRequestDTO.class));
+        // paymentType is PARTIAL — determined by service, not DTO
+        assertThat(response.getBody().getPaymentType()).isEqualTo("PARTIAL");
+        verify(paymentService, times(1)).processPayment(any(PaymentRequestDTO.class));
     }
 
     @Test
@@ -120,11 +120,10 @@ class PaymentControllerTest {
                 paymentController.processPayment(paymentRequestDTO);
 
         assertThat(response.getBody().getPaymentMethod()).isEqualTo("ONLINE");
-        verify(paymentService, times(1))
-                .processPayment(any(PaymentRequestDTO.class));
+        verify(paymentService, times(1)).processPayment(any(PaymentRequestDTO.class));
     }
 
-    //getPaymentHistory() tests
+    // getPaymentHistory()
 
     @Test
     void givenValidCardId_whenGetPaymentHistoryCalled_thenReturns200() {
@@ -137,18 +136,15 @@ class PaymentControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody().get(0).getCardId())
-                .isEqualTo(cardId.toString());
-        assertThat(response.getBody().get(0).getPaymentMethod())
-                .isEqualTo("ONLINE");
+        assertThat(response.getBody().get(0).getCardId()).isEqualTo(cardId.toString());
+        assertThat(response.getBody().get(0).getPaymentMethod()).isEqualTo("ONLINE");
 
         verify(paymentService).getPaymentHistory(cardId);
     }
 
     @Test
     void givenCardWithNoPayments_whenGetPaymentHistoryCalled_thenReturnsEmptyList() {
-        when(paymentService.getPaymentHistory(cardId))
-                .thenReturn(List.of());
+        when(paymentService.getPaymentHistory(cardId)).thenReturn(List.of());
 
         ResponseEntity<List<RetrievePaymentHistoryDTO>> response =
                 paymentController.getPaymentHistory(getPaymentHistoryRequestDTO);

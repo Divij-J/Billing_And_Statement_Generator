@@ -26,8 +26,8 @@ public class PaymentRequestDTO {
     )
     private String amountPaid;
 
-    @NotBlank(message = "Payment type is required")
-    private String paymentType;
+    // paymentType is now server-determined (FULL / PARTIAL / MINIMUM)
+    // based on amount vs billing cycle outstanding
 
     @NotBlank(message = "Payment method is required")
     private String paymentMethod; // BANK_TRANSFER, CHECK, ONLINE
