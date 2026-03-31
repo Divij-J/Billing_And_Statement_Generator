@@ -221,4 +221,40 @@ class PaymentRepositoryTest {
         Payment found = paymentRepository.findById(paymentId).orElse(null);
         assertThat(found).isNull();
     }
+
+    @Test
+    void givenPaymentsWithinCycle_whenFindPaymentsWithinCycleCalled_thenReturnsCorrectPayments() {
+        Payment payment = createTestPayment(
+                "test8@test.com", "8888888888",
+                new BigDecimal("500.00"),
+                Payment.PaymentType.PARTIAL,
+                Payment.PaymentStatus.SUCCESS);
+
+        List<Payment> payments = paymentRepository.findPaymentsWithinCycle(
+                payment.getCard().getCardId(),
+                LocalDate.now().minusDays(1),
+                LocalDate.now().plusDays(1));
+
+        assertThat(payments).isNotNull();
+        assertThat(payments).hasSize(1);
+        assertThat(payments.get(0).getAmountPaid())
+                .isEqualByComparingTo(new BigDecimal("500.00"));
+    }
+
+    @Test
+    void givenNoPaymentsWithinCycle_whenFindPaymentsWithinCycleCalled_thenReturnsEmptyList() {
+        Payment payment = createTestPayment(
+                "test9@test.com", "9999999999",
+                new BigDecimal("500.00"),
+                Payment.PaymentType.PARTIAL,
+                Payment.PaymentStatus.SUCCESS);
+
+        List<Payment> payments = paymentRepository.findPaymentsWithinCycle(
+                payment.getCard().getCardId(),
+                LocalDate.now().minusDays(60),
+                LocalDate.now().minusDays(31));
+
+        assertThat(payments).isNotNull();
+        assertThat(payments).isEmpty();
+    }
 }
