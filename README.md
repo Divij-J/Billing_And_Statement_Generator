@@ -51,6 +51,4 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 * JUnit 5
 
 ## Database Model
-<img width="1181" height="1032" alt="image" src="https://github.com/user-attachments/assets/6b1bedf4-ebdc-44d5-a362-6d00413b80c0" />
-
 ![ER](https://github.com/user-attachments/assets/9c82d716-2c0f-4fc2-8e0a-5646ae7bbb50)
