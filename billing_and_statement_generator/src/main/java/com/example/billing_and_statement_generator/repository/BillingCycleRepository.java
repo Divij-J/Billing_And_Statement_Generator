@@ -15,4 +15,6 @@ public interface BillingCycleRepository extends JpaRepository<BillingCycle, UUID
           Optional<BillingCycle> findTopByCardCardIdOrderByCycleEndDateDesc(UUID cardId);
 
           List<BillingCycle> findByCardCardIdAndCycleStatus(UUID cardId, String cycleStatus);
+
+    Optional<BillingCycle> findTopByCardCardIdOrderByCycleIdDesc(UUID cardId);
 }

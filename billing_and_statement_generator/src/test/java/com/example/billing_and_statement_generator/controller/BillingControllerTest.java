@@ -42,29 +42,6 @@ class BillingControllerTest {
     private ObjectMapper objectMapper;
 
     // ------------------------------------------------------------
-    // POST /api/billing/generate/{cardId}
-    // ------------------------------------------------------------
-//    @WithMockUser
-//    @Test
-//    void generateBillingCycle_shouldReturn201() throws Exception {
-//        UUID cardId = UUID.randomUUID();
-//
-//        BillingCycleResponseDTO response = new BillingCycleResponseDTO();
-//        response.setCycleId(UUID.randomUUID());
-//        response.setCardId(cardId);
-//        response.setCycleStatus("OPEN");
-//
-//        Mockito.when(billingService.generateBillingCycle(cardId))
-//                .thenReturn(response);
-//
-//        mockMvc.perform(post("/api/billing/generate/" + cardId)
-//                        .with(csrf()))
-//                .andExpect(status().isCreated())
-//                .andExpect(jsonPath("$.cycleId").value(response.getCycleId().toString()))
-//                .andExpect(jsonPath("$.cardId").value(cardId.toString()));
-//    }
-
-    // ------------------------------------------------------------
     // POST /api/billing/v1/GenerateBillingCycleFeeBreakdown
     // ------------------------------------------------------------
     @WithMockUser
@@ -90,32 +67,6 @@ class BillingControllerTest {
     }
 
     // ------------------------------------------------------------
-    // POST /api/billing/{cardId}/{cycleId}
-    // ------------------------------------------------------------
-//    @WithMockUser
-//    @Test
-//    void getBillingCycle_shouldReturn200() throws Exception {
-//        UUID cardId = UUID.randomUUID();
-//        UUID cycleId = UUID.randomUUID();
-//
-//        BillingCycleResponseDTO response = new BillingCycleResponseDTO();
-//        response.setCycleId(cycleId);
-//        response.setCardId(cardId);
-//        response.setCycleStatus("OPEN");
-//
-//        Mockito.when(billingService.getBillingCycle(cardId, cycleId))
-//                .thenReturn(response);
-//
-//        mockMvc.perform(post("/api/billing/" + cardId + "/" + cycleId)
-//                        .with(csrf())
-//                        .contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.cycleId").value(cycleId.toString()))
-//                .andExpect(jsonPath("$.cardId").value(cardId.toString()))
-//                .andExpect(jsonPath("$.cycleStatus").value("OPEN"));
-//    }
-
-    // ------------------------------------------------------------
     // POST /api/billing/v1/GetBillingCycleByCardAndCycleId
     // ------------------------------------------------------------
     @WithMockUser
@@ -129,10 +80,7 @@ class BillingControllerTest {
         response.setCardId(cardId);
         response.setCycleStatus("OPEN");
 
-//        Mockito.when(billingService.getBillingCycleV1(cardId, cycleId))
-//                .thenReturn(response);
         Mockito.when(billingService.getBillingCycle(cardId, cycleId)).thenReturn(response);
-
 
         String body = "{ \"cardId\": \"" + cardId + "\", \"cycleId\": \"" + cycleId + "\" }";
 

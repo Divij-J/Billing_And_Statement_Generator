@@ -51,6 +51,32 @@ public class BillingService {
         billingCycleRepository
           .findTopByCardCardIdOrderByCycleEndDateDesc(cardId);
 
+//        if (lastCycleOpt.isPresent()
+//                && "OPEN".equals(lastCycleOpt.get().getCycleStatus())) {
+//
+//            BillingCycle previousCycle = lastCycleOpt.get();
+//
+//            previousCycle.setCycleStatus("CLOSED");
+//            billingCycleRepository.save(previousCycle);
+//
+//            log.info("Closed previous billing cycle {}", previousCycle.getCycleId());
+//        }
+        BigDecimal previousBalance = BigDecimal.ZERO;
+
+        if (lastCycleOpt.isPresent()
+                && "OPEN".equals(lastCycleOpt.get().getCycleStatus())) {
+
+            BillingCycle previousCycle = lastCycleOpt.get();
+
+            // ✅ capture balance BEFORE closing
+            previousBalance = previousCycle.getTotalOutstanding();
+
+            // ✅ then close the cycle
+            previousCycle.setCycleStatus("CLOSED");
+            billingCycleRepository.save(previousCycle);
+
+            log.info("Carried forward previous balance {}", previousBalance);
+        }
       LocalDate cycleStartDate = lastCycleOpt
           .map(c -> c.getCycleEndDate().plusDays(1))
           .orElse(cycleEndDate.minusDays(30));
@@ -58,15 +84,25 @@ public class BillingService {
       LocalDate dueDate = BillingUtils.calculateDueDate(cycleEndDate);
 
       // 3. Previous balance carried forward ONLY if last cycle is OPEN (unpaid)
-      BigDecimal previousBalance = lastCycleOpt
-          .filter(c -> "OPEN".equals(c.getCycleStatus()))
-          .map(BillingCycle::getTotalOutstanding)
-          .orElse(BigDecimal.ZERO);
+//      BigDecimal previousBalance = lastCycleOpt
+//          .filter(c -> "CLOSED".equals(c.getCycleStatus()))
+//          .map(BillingCycle::getTotalOutstanding)
+//          .orElse(BigDecimal.ZERO);
+//        BigDecimal previousBalance = lastCycleOpt
+//                .filter(c -> "OPEN".equals(c.getCycleStatus()))
+//                .map(c -> c.getTransactions().stream()
+//                        .map(Transaction::getAmount)
+//                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+//                .orElse(BigDecimal.ZERO);
 
       // 4. Fetch unbilled transactions
       List<Transaction> unbilledTxns =
         transactionRepository
           .findByCardCardIdAndBillingCycleIsNull(cardId);
+
+        if (unbilledTxns.isEmpty()) {
+            throw new IllegalStateException("No new transactions to bill");
+        }
 
       // 4B. Retrieve all payments made in this cycle
         List<Payment> payments = paymentRepository
@@ -147,7 +183,11 @@ public class BillingService {
         }
       }
 
-      // 8. CASH ADVANCE FEE — rate taken from Card entity
+
+        unbilledTxns =
+                transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId);
+
+        // 8. CASH ADVANCE FEE — rate taken from Card entity
       // Already applied per transaction in TransactionService.create()
       // Sum FEE transactions to get total fees applied this cycle
       BigDecimal cashAdvanceFee = unbilledTxns.stream()
@@ -156,6 +196,12 @@ public class BillingService {
           .map(Transaction::getAmount)
           .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+//        BigDecimal cashAdvanceFee =
+//                transactionRepository
+//                        .findByCardCardIdAndBillingCycleIsNull(cardId).stream()
+//                        .filter(t -> t.getTransactionType() == Transaction.transactionType.FEE)
+//                        .map(Transaction::getAmount)
+//                        .reduce(BigDecimal.ZERO, BigDecimal::add);
       // 9. ANNUAL MEMBERSHIP FEE — check if anniversary year reached
       BigDecimal annualMembershipFee = checkAndApplyAnnualFee(
                             card, cardId, cycleStartDate, cycleEndDate);
@@ -165,12 +211,18 @@ public class BillingService {
           .add(annualMembershipFee);
 
       // 10. Total outstanding
-        BigDecimal totalOutstanding = previousBalance
-                .add(totalPurchases)
-                .add(totalCashAdvance)
-                .add(totalInterest)
-                .add(totalFees)
-                .subtract(totalPayments);
+//        BigDecimal totalOutstanding = previousBalance
+//                .add(totalPurchases)
+//                .add(totalCashAdvance)
+//                .add(totalInterest)
+//                .add(totalFees)
+//                .subtract(totalPayments);
+        BigDecimal totalOutstanding =
+                totalPurchases
+                        .add(totalCashAdvance)
+                        .add(totalInterest)
+                        .add(totalFees)
+                        .subtract(totalPayments);
 
       // 11. Minimum due = max(5% of totalOutstanding, $100)
       BigDecimal minimumDue =
@@ -199,7 +251,10 @@ public class BillingService {
       BillingCycle saved = billingCycleRepository.save(cycle);
 
       // 13. Link unbilled transactions to this cycle
-      unbilledTxns.forEach(t -> t.setBillingCycle(saved));
+//        List<Transaction> unbilled =
+//                transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId);
+
+        unbilledTxns.forEach(tx -> tx.setBillingCycle(saved));
       transactionRepository.saveAll(unbilledTxns);
 
       log.info("/api/billing/generate/{} - cycle {} generated",
@@ -209,7 +264,28 @@ public class BillingService {
         if (totalPayments.compareTo(BigDecimal.ZERO) > 0) {
             cardService.applyPayment(cardId, totalPayments);
         }
-        return toResponseDTO(saved, unbilledTxns, totalFees);
+
+// Build response from cycle transactions ONLY
+//        List<Transaction> cycleTxns = saved.getTransactions();
+//        List<Transaction> cycleTxns =
+//                Optional.ofNullable(saved.getTransactions()).orElse(List.of());
+//        BigDecimal feesApplied =
+//                cycleTxns.stream()
+//                        .filter(tx -> tx.getTransactionType() == Transaction.transactionType.FEE)
+//                        .map(Transaction::getAmount)
+//                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+//
+//        return toResponseDTO(saved, cycleTxns, feesApplied);
+        List<Transaction> cycleTxns =
+                transactionRepository.findByBillingCycleCycleId(saved.getCycleId());
+
+        BigDecimal feesApplied =
+                cycleTxns.stream()
+                        .filter(tx -> tx.getTransactionType() == Transaction.transactionType.FEE)
+                        .map(Transaction::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return toResponseDTO(saved, cycleTxns, feesApplied);
 
     } catch (EntityNotFoundException e) {
       log.error("/api/billing/generate/{} - not found: {}",
@@ -238,14 +314,27 @@ public class BillingService {
     List<Transaction> txns = cycle.getTransactions() != null
         ? cycle.getTransactions() : List.of();
 
-    BigDecimal fees = cycle.getTotalOutstanding()
-        .subtract(cycle.getPreviousBalance())
-        .subtract(cycle.getTotalPurchases())
-        .subtract(cycle.getTotalCashAdvance())
-        .subtract(cycle.getTotalInterest());
+//    BigDecimal fees = cycle.getTotalOutstanding()
+//        .subtract(cycle.getPreviousBalance())
+//        .subtract(cycle.getTotalPurchases())
+//        .subtract(cycle.getTotalCashAdvance())
+//        .subtract(cycle.getTotalInterest());
+//      BigDecimal fees = cycle.getTransactions().stream()
+//              .filter(tx -> tx.getTransactionType() == Transaction.transactionType.FEE)
+//              .map(Transaction::getAmount)
+//              .reduce(BigDecimal.ZERO, BigDecimal::add);
+//
+//    log.info("/api/billing/{}/{} - successfully retrieved", cardId, cycleId);
+//    return toResponseDTO(cycle, txns, fees);
+      List<Transaction> cycleTxns = cycle.getTransactions();
 
-    log.info("/api/billing/{}/{} - successfully retrieved", cardId, cycleId);
-    return toResponseDTO(cycle, txns, fees);
+      BigDecimal feesApplied =
+              cycleTxns.stream()
+                      .filter(tx -> tx.getTransactionType() == Transaction.transactionType.FEE)
+                      .map(Transaction::getAmount)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      return toResponseDTO(cycle, cycleTxns, feesApplied);
   }
 
   // Checks if annual membership fee should be applied this cycle
