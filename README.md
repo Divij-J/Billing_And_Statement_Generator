@@ -2,6 +2,7 @@
 <a href="https://capgemini-my.sharepoint.com/:p:/r/personal/stephen_harayo_capgemini_com/Documents/Credit%20Card%20Billing%20and%20Statement%20Generator.pptx?d=wfb546ca9dff24842be65bd21979a3b85&csf=1&web=1&e=78Mxjo" target="_blank">
   <img src="https://img.shields.io/badge/View%20Slides-Click%20Here-blue?style=for-the-badge" />
 </a>
+
 A Spring Boot application designed to simulate the full lifecycle of a credit card billing system — from card issuance and transaction tracking through billing cycle generation, payment processing, and statement creation. This project demonstrates the implementation of financial domain modelling, standard security protocols, strict data validation, and scalable architectural patterns.
 
 ## Use Case
