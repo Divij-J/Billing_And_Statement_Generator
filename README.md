@@ -15,7 +15,6 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 * **Real-Time Balance Reconciliation**: When a payment is processed, the system simultaneously updates the card balance, billing cycle outstanding, statement remaining balance, and statement status, ensuring all data is consistent at all times.
 * **Automated API Documentation**: Integrated Swagger UI providing a living, interactive documentation portal that simplifies manual testing and API exploration.
 * **Stateless Security Architecture**: Built a security filter chain that decodes and validates JWTs, ensuring the application remains stateless and horizontally scalable.
-* **Contract Testing**: Implemented PACT consumer-driven contract testing to verify the API contract between the frontend consumer and the Payment & Statement service provider.
 
 ## Feature & Technical Implementation
 * **Identity Exchange**: Implemented an 'AuthController' that trades Basic Auth credentials for a JSON Web Token (JWT). The token contains the user's granted authorities as a 'scope' claim.
@@ -33,6 +32,7 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 * **Service Exception Pattern**: Custom exception classes ('NotFoundException', 'ConflictException', 'ValidationException', 'LimitExceededException') are defined within each service to provide meaningful error context while keeping the exception hierarchy clean.
 
 ### High Level System Architecture & Request Lifecycle
+![HLSA](https://github.com/user-attachments/assets/22338dac-73cd-4798-8554-a7d9f0cba4d4)
 
 ## Logging & Error Handling
 * **SLF4J/Logback**: Integrated the SLF4J logging framework using Lombok's '@Slf4j' annotation across all service and controller classes. Logs capture authentication events, balance changes, payment processing, and transaction outcomes.
@@ -52,3 +52,5 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 
 ## Database Model
 <img width="1181" height="1032" alt="image" src="https://github.com/user-attachments/assets/6b1bedf4-ebdc-44d5-a362-6d00413b80c0" />
+
+![ER](https://github.com/user-attachments/assets/9c82d716-2c0f-4fc2-8e0a-5646ae7bbb50)
