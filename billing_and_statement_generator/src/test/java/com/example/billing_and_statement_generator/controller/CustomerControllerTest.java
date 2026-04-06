@@ -35,7 +35,7 @@ class CustomerControllerTest {
     private ObjectMapper objectMapper;
 
     // -------------------------------------------------------------------------
-    // TEST: POST /api/customers
+    // TEST: POST /api/customers/createCustomer
     // -------------------------------------------------------------------------
     @WithMockUser
     @Test
@@ -63,7 +63,7 @@ class CustomerControllerTest {
         Mockito.when(customerService.createCustomer(any(CreateCustomerRequestDTO.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/customers")
+        mockMvc.perform(post("/api/customers/createCustomer")
                         .with(csrf()) // Required for POST
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -102,7 +102,7 @@ class CustomerControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: PUT /api/customers/
+    // TEST: PUT /api/customers/updateCustomer
     // -------------------------------------------------------------------------
     @WithMockUser
     @Test
@@ -140,7 +140,7 @@ class CustomerControllerTest {
                 objectMapper.writeValueAsString(request)
         );
 
-        mockMvc.perform(put("/api/customers")
+        mockMvc.perform(put("/api/customers/updateCustomer")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))

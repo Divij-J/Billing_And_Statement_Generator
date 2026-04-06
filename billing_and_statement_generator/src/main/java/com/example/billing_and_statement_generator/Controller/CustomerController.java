@@ -24,17 +24,17 @@ public class CustomerController {
 
   private final CustomerService customerService;
 
-  @PostMapping
+  @PostMapping("/createCustomer")
   @Operation(
     summary = "Create a new customer",
           description = "Creates a new customer and returns the generated customer details"
   )
           public ResponseEntity<CustomerResponseDTO> createCustomer(
       @Valid @RequestBody CreateCustomerRequestDTO request) {
-    log.info("POST /api/customers - request received for email={}",
+    log.info("POST /api/customers/createCustomer - request received for email={}",
                       request.getEmail());
     CustomerResponseDTO response = customerService.createCustomer(request);
-    log.info("POST /api/customers - customer created id={}",
+    log.info("POST /api/customers/createCustomer - customer created id={}",
                       response.getCustomerId());
     return ResponseEntity.status(201).body(response);
   }
@@ -52,7 +52,7 @@ public class CustomerController {
         return ResponseEntity.ok(response);
     }
 
-  @PutMapping
+  @PutMapping("/updateCustomer")
   @Operation(
     summary = "Update customer by ID",
           description = "Updates the customer profile associated with the given customer ID and returns the updated details"
@@ -62,10 +62,10 @@ public class CustomerController {
             UUID customerId = request.getCustomerId();
             CreateCustomerRequestDTO updateData = request.getUpdateData();
 
-      log.info("PUT /api/customers - request received for customerId{}", customerId);
+      log.info("PUT /api/customers/updateCustomer - request received for customerId{}", customerId);
     CustomerResponseDTO response =
       customerService.updateCustomer(customerId, updateData);
-    log.info("PUT /api/customers - successfully updated customerId={}", customerId);
+    log.info("PUT /api/customers/updateCustomer - successfully updated customerId={}", customerId);
     return ResponseEntity.ok(response);
   }
 }
