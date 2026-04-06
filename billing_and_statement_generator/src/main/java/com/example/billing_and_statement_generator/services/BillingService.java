@@ -51,16 +51,6 @@ public class BillingService {
         billingCycleRepository
           .findTopByCardCardIdOrderByCycleEndDateDesc(cardId);
 
-//        if (lastCycleOpt.isPresent()
-//                && "OPEN".equals(lastCycleOpt.get().getCycleStatus())) {
-//
-//            BillingCycle previousCycle = lastCycleOpt.get();
-//
-//            previousCycle.setCycleStatus("CLOSED");
-//            billingCycleRepository.save(previousCycle);
-//
-//            log.info("Closed previous billing cycle {}", previousCycle.getCycleId());
-//        }
         BigDecimal previousBalance = BigDecimal.ZERO;
 
         if (lastCycleOpt.isPresent()
@@ -68,10 +58,10 @@ public class BillingService {
 
             BillingCycle previousCycle = lastCycleOpt.get();
 
-            // ✅ capture balance BEFORE closing
+            // capture balance BEFORE closing
             previousBalance = previousCycle.getTotalOutstanding();
 
-            // ✅ then close the cycle
+            // then close the cycle
             previousCycle.setCycleStatus("CLOSED");
             billingCycleRepository.save(previousCycle);
 
@@ -211,18 +201,18 @@ public class BillingService {
           .add(annualMembershipFee);
 
       // 10. Total outstanding
-//        BigDecimal totalOutstanding = previousBalance
-//                .add(totalPurchases)
-//                .add(totalCashAdvance)
-//                .add(totalInterest)
-//                .add(totalFees)
-//                .subtract(totalPayments);
-        BigDecimal totalOutstanding =
-                totalPurchases
-                        .add(totalCashAdvance)
-                        .add(totalInterest)
-                        .add(totalFees)
-                        .subtract(totalPayments);
+        BigDecimal totalOutstanding = previousBalance
+                .add(totalPurchases)
+                .add(totalCashAdvance)
+                .add(totalInterest)
+                .add(totalFees)
+                .subtract(totalPayments);
+//        BigDecimal totalOutstanding =
+//                totalPurchases
+//                        .add(totalCashAdvance)
+//                        .add(totalInterest)
+//                        .add(totalFees)
+//                        .subtract(totalPayments);
 
       // 11. Minimum due = max(5% of totalOutstanding, $100)
       BigDecimal minimumDue =
