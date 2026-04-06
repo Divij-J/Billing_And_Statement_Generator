@@ -3,7 +3,7 @@
   <img src="https://img.shields.io/badge/View%20Slides-Click%20Here-blue?style=for-the-badge" />
 </a>
 
-A Spring Boot application designed to simulate the full lifecycle of a credit card billing system — from card issuance and transaction tracking through billing cycle generation, payment processing, and statement creation. This project demonstrates the implementation of financial domain modelling, standard security protocols, strict data validation, and scalable architectural patterns.
+A Spring Boot application designed to simulate the full lifecycle of a credit card billing system from card issuance and transaction tracking through billing cycle generation, payment processing, and statement creation. This project demonstrates the implementation of financial domain modelling, standard security protocols, strict data validation, and scalable architectural patterns.
 
 ## Use Case
 The **Credit Card Billing & Statement Generator** serves as a centralized backend for financial services to handle the complete lifecycle of credit card billing operations. It solves the need for accurate financial calculation, secure data storage, identity verification through JWT, and automated billing rule enforcement (e.g. interest calculation, minimum due, cash advance fees, late fees).
@@ -28,7 +28,7 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 ## Design Patterns & Architecture
 * **Controller -> Service -> Repository**: Followed the classic layered architecture to ensure separation of concerns and maintainability. Each layer has a single responsibility and communicates only with the adjacent layer.
 * **DTO Pattern**: Utilized Data Transfer Objects to decouple the API contract from the database layer. Request DTOs handle validation with '@Valid' annotations. Response DTOs expose only the fields needed by the consumer.
-* **Mapper Pattern**: Implemented dedicated mapper components (MapStruct for Card, Customer, Transaction; manual mappers for Payment and Statement) to handle transformation logic between entities and DTOs. Server-controlled fields like IDs, dates, and calculated values are never mapped from the request.
+* **Mapper Pattern**: Implemented dedicated mapper components to handle transformation logic between entities and DTOs. Server-controlled fields like IDs, dates, and calculated values are never mapped from the request.
 * **Repository Pattern**: Used Spring Data JPA repositories extending 'JpaRepository' to abstract all database access. Custom '@Query' annotations are used for complex joins and aggregations (e.g. total paid by cycle, payments within date range).
 * **Service Exception Pattern**: Custom exception classes ('NotFoundException', 'ConflictException', 'ValidationException', 'LimitExceededException') are defined within each service to provide meaningful error context while keeping the exception hierarchy clean.
 
