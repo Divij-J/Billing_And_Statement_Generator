@@ -7,6 +7,7 @@ import com.example.billing_and_statement_generator.dto.transaction.CreateTransac
 import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Statement;
+import com.example.billing_and_statement_generator.entity.Transaction;
 import com.example.billing_and_statement_generator.mapper.StatementMapper;
 import com.example.billing_and_statement_generator.mapper.TransactionMapper;
 import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
@@ -21,6 +22,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
+
+import static com.example.billing_and_statement_generator.util.BillingUtils.calculateCashAdvanceFees;
+import static com.example.billing_and_statement_generator.util.BillingUtils.calculateTotalFees;
 
 @Service
 @RequiredArgsConstructor
@@ -56,24 +60,21 @@ public class StatementService {
         }
 
         // Calculate balances
-        BigDecimal totalCashAdvance = billingCycle.getTotalCashAdvance();
         BigDecimal totalInterest = billingCycle.getTotalInterest();
         BigDecimal totalOutstanding = billingCycle.getTotalOutstanding();
         BigDecimal minimumDue = billingCycle.getMinimumDue();
 
-        // Calculate fees (null-safety)
-        BigDecimal cashAdvanceFeeRate = card.getCashAdvanceFeeRate() == null
-                ? BigDecimal.ZERO : card.getCashAdvanceFeeRate();
-        BigDecimal lateFeeAmount = card.getLateFeeAmount() == null
-                ? BigDecimal.ZERO : card.getLateFeeAmount();
 
-        BigDecimal cashAdvanceFee = (totalCashAdvance == null ? BigDecimal.ZERO : totalCashAdvance)
-                .multiply(cashAdvanceFeeRate)
-                .setScale(2, RoundingMode.HALF_UP);
+        List<Transaction> cycleTransactions =
+                billingCycle.getTransactions() == null
+                        ? List.of()
+                        : billingCycle.getTransactions();
 
-        BigDecimal totalFeeApplied = cashAdvanceFee
-                .add(lateFeeAmount)
-                .setScale(2, RoundingMode.HALF_UP);
+        // Use helper method in BillingUtils for calculating cash advance fees
+        BigDecimal cashAdvanceFee = calculateCashAdvanceFees(cycleTransactions);
+
+        // Use helper method in BillingUtils for calculating all fees
+        BigDecimal totalFeeApplied = calculateTotalFees(cycleTransactions);
 
         // Payments so far (null-safe)
         BigDecimal totalPaid = paymentRepository.findTotalPaidByCycleId(UUID.fromString(dto.getCycleId()));
@@ -82,10 +83,8 @@ public class StatementService {
         BigDecimal interest = totalInterest == null ? BigDecimal.ZERO : totalInterest;
         BigDecimal outstanding = totalOutstanding == null ? BigDecimal.ZERO : totalOutstanding;
 
-        BigDecimal statementBalance = outstanding
-                .add(interest)
-                .add(totalFeeApplied)
-                .setScale(2, RoundingMode.HALF_UP);
+        // Fetch outstanding balance from the total balance in Billing Cycle
+        BigDecimal statementBalance = billingCycle.getTotalOutstanding();
 
         BigDecimal remainingStatementBalance = statementBalance
                 .subtract(totalPaid)
