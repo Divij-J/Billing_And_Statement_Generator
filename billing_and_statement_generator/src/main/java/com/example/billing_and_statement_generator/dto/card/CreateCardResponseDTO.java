@@ -22,6 +22,7 @@ public class CreateCardResponseDTO {
     private boolean active;
     private BigDecimal cardBalance;
     private BigDecimal cashAdvanceBalance;
+    private BigDecimal availableCredit;
     private BigDecimal creditLimit;
     private BigDecimal annualInterestRate;
     private BigDecimal cashAdvanceAPR;
