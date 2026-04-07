@@ -35,6 +35,10 @@ public class BillingUtils {
 
     // Minimum due = max(5% of totalOutstanding, $100 floor)
     public static BigDecimal calculateMinimumDue(BigDecimal totalOutstanding) {
+        if (totalOutstanding == null || totalOutstanding.signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+
         BigDecimal fivePercent = totalOutstanding
                 .multiply(new BigDecimal("0.05"))
                 .setScale(2, RoundingMode.HALF_UP);

@@ -72,7 +72,10 @@ public class BillingService {
             // 3. Fetch unbilled transactions and total balances
             BigDecimal previousPurchaseBalance = card.getCardBalance(); // carry-over purchase balance
             BigDecimal previousCashAdvanceBalance = card.getCashAdvanceBalance(); // carry-over cash advance balance
-            BigDecimal previousTotalBalance = previousPurchaseBalance.add(previousCashAdvanceBalance); // total carry-over balance
+
+            BigDecimal previousTotalBalance = lastCycleOpt
+                    .map(BillingCycle::getTotalOutstanding)
+                    .orElse(BigDecimal.ZERO);
 
             log.info("Snapshot balances — purchase: {}, cashAdvance: {}, total: {}",
                     previousPurchaseBalance, previousCashAdvanceBalance, previousTotalBalance);
@@ -177,18 +180,19 @@ public class BillingService {
                     .add(annualMembershipFee);
 
             // 10. Total outstanding
-            BigDecimal totalOutstanding = previousTotalBalance
-                    .add(totalPurchases)
-                    .add(totalCashAdvance)
-                    .add(totalInterest)
-                    .add(totalFeesApplied)
-                    .subtract(totalPayments);
+            BigDecimal totalOutstanding = card.getCardBalance()
+                    .add(card.getCashAdvanceBalance());
 
             // 11. Minimum due = max(5% of totalOutstanding, $100) + overdue amount(if any)
             BigDecimal minimumDue =
                     BillingUtils.calculateMinimumDue(totalOutstanding);
 
-            // 12. Persist billing cycle
+            cardService.setMinimumDue(cardId, minimumDue);
+
+            // 12. Add due date to card
+            cardService.setDueDate(cardId, dueDate);
+
+            // 13. Persist billing cycle
             BillingCycle cycle = BillingCycle.builder()
                     .cycleId(UUID.randomUUID())
                     .card(card)
