@@ -107,7 +107,7 @@ public class TransactionService {
         if(amount == null){
             throw new ValidationException("Interest Amount is required");
         }
-        if(amount.signum() < 0){
+        if(amount.signum() <= 0){
             throw new ValidationException("Interest Amount must be > 0");
         }
 
