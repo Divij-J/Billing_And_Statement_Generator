@@ -165,6 +165,26 @@ class TransactionServiceTest {
     }
 
     @Test
+    void testCreateInterestNullAmount() {
+        assertThrows(TransactionService.ValidationException.class,
+                () -> transactionService.createInterest(
+                        cardId, null,
+                        TransactionService.InterestType.CARDBALANCE));
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
+    void testCreateInterestZeroAmount() {
+        assertThrows(TransactionService.ValidationException.class,
+                () -> transactionService.createInterest(
+                        cardId, BigDecimal.ZERO,
+                        TransactionService.InterestType.CARDBALANCE));
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
     void testCreateFee() {
         LocalDate date = LocalDate.now();
 
@@ -176,6 +196,26 @@ class TransactionServiceTest {
 
         verify(cardService).applyFee(cardId, BigDecimal.valueOf(50));
         verify(transactionRepository).save(any(Transaction.class));
+    }
+
+    @Test
+    void testCreateFeeNullAmount() {
+        assertThrows(TransactionService.ValidationException.class,
+                () -> transactionService.createFee(
+                        cardId, null, LocalDate.now(),
+                        Transaction.transactionType.LATEFEE));
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
+    void testCreateFeeZeroAmount() {
+        assertThrows(TransactionService.ValidationException.class,
+                () -> transactionService.createFee(
+                        cardId, BigDecimal.ZERO, LocalDate.now(),
+                        Transaction.transactionType.LATEFEE));
+
+        verify(transactionRepository, never()).save(any());
     }
 
     @Test
