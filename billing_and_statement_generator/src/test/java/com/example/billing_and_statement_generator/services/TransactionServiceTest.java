@@ -172,7 +172,7 @@ class TransactionServiceTest {
         when(cardService.applyFee(cardId, BigDecimal.valueOf(50)))
                 .thenReturn(BigDecimal.valueOf(50));
 
-        transactionService.createFee(cardId, BigDecimal.valueOf(50), date);
+        transactionService.createFee(cardId, BigDecimal.valueOf(50), date, Transaction.transactionType.FEE);
 
         verify(cardService).applyFee(cardId, BigDecimal.valueOf(50));
         verify(transactionRepository).save(any(Transaction.class));

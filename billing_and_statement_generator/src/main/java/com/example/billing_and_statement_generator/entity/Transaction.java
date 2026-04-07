@@ -55,7 +55,9 @@ public class Transaction{
     public enum transactionType{
         PURCHASE,
         CASHADVANCE,
-        PAYMENT,
+        CASHADVANCEFEE,
+        ANNUALMEMBERSHIPFEE,
+        LATEFEE,
         INTEREST,
         FEE
     }
