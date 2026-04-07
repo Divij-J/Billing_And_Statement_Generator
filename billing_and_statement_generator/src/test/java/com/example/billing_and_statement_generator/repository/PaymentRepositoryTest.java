@@ -62,6 +62,7 @@ class PaymentRepositoryTest {
         card.setActive(true);
         card.setCardBalance(BigDecimal.ZERO);
         card.setCashAdvanceBalance(BigDecimal.ZERO);
+        card.setAvailableCredit(new BigDecimal("5000.00"));
         card.setCreditLimit(new BigDecimal("5000.00"));
         card.setAnnualInterestRate(new BigDecimal("0.24"));
         card.setBillingCycleDate(LocalDate.now());

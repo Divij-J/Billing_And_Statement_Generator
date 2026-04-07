@@ -73,6 +73,7 @@ class PaymentStatementMockMvcTest {
         testCard.setActive(true);
         testCard.setCardBalance(new BigDecimal("1000.00"));
         testCard.setCashAdvanceBalance(BigDecimal.ZERO);
+        testCard.setAvailableCredit(new BigDecimal("5000.00"));
         testCard.setCreditLimit(new BigDecimal("5000.00"));
         testCard.setAnnualInterestRate(new BigDecimal("0.24"));
         testCard.setBillingCycleDate(LocalDate.now());
@@ -105,13 +106,8 @@ class PaymentStatementMockMvcTest {
 
     @Test
     void shouldProcessPayment_GivenValidPartialPayment() throws Exception {
-        // Reset card balance
-//        testCard.setCardBalance(new BigDecimal("1000.00"));
-//        cardRepository.save(testCard);
-
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
-//                .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("500.00")
                 .paymentMethod("ONLINE")
                 .build();

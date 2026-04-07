@@ -54,6 +54,7 @@ public class CardRepositoryTest {
                         .active(true)
                         .cardBalance(BigDecimal.ZERO)
                         .cashAdvanceBalance(BigDecimal.ZERO)
+                        .availableCredit(BigDecimal.valueOf(5000))
                         .creditLimit(BigDecimal.valueOf(5000))
                         .securityCode("123")
                         .build();
@@ -99,6 +100,7 @@ public class CardRepositoryTest {
                 .active(true)
                 .cardBalance(BigDecimal.ZERO)
                 .cashAdvanceBalance(BigDecimal.ZERO)
+                .availableCredit(BigDecimal.valueOf(3000))
                 .creditLimit(BigDecimal.valueOf(3000))
                 .securityCode("789")
                 .build();
