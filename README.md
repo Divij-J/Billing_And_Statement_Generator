@@ -60,3 +60,4 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 * **PDF Statement Download**: Add a dedicated endpoint POST /statements/v1/download that generates and returns the billing statement as a downloadable PDF file using iText7, providing clients with a print-ready document.
 * **Customer Spending Analytics**: Build an analytics module that provides cardholders with spending breakdowns by merchant, category, and time period. Include monthly spend summaries and trend comparisons across billing cycles.
 * **Interest & Revenue Reports**: Generate admin-level reports showing total interest collected, fee revenue, cash advance volume, and late fee income across all cards and billing cycles. Support date range filtering and export to JSON.
+* **Billing Cycle Automated**: ​Automate billing cycle closure to trigger interest calculation, fee application, and statement generation using scheduled jobs.
