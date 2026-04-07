@@ -272,6 +272,14 @@ public class CardService {
         log.debug("CardService: Minimum due adjusted to {}", amount);
     }
 
+    // Adjust card's due date (calculated from Billing Cycle)
+    @Transactional
+    public void setDueDate(UUID cardId, LocalDate date){
+        Card card = loadCard(cardId);
+        card.setBillingCycleDate(date);
+        log.debug("CardService: Billing Date adjusted to {}", date);
+    }
+
     // Reads this card's balance
     @Transactional(readOnly = true)
     public GetCardBalanceResponseDTO getBalances(UUID cardId) {
