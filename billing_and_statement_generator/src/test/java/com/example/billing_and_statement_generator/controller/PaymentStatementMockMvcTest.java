@@ -71,7 +71,7 @@ class PaymentStatementMockMvcTest {
         testCard.setCardIssueDate(LocalDate.now().minusYears(1));
         testCard.setExpiryDate(LocalDate.now().plusYears(3));
         testCard.setActive(true);
-        testCard.setCardBalance(BigDecimal.ZERO);
+        testCard.setCardBalance(new BigDecimal("1000.00"));
         testCard.setCashAdvanceBalance(BigDecimal.ZERO);
         testCard.setCreditLimit(new BigDecimal("5000.00"));
         testCard.setAnnualInterestRate(new BigDecimal("0.24"));
@@ -81,6 +81,7 @@ class PaymentStatementMockMvcTest {
         testCard.setSecurityCode("123");
         testCard.setAnnualMembershipFee(new BigDecimal("0.00"));
         testCard.setCashAdvanceLimit(new BigDecimal("1000.00"));
+        testCard.setMinimumDue(new BigDecimal("100.00"));
         cardRepository.save(testCard);
 
         testBillingCycle = new BillingCycle();
@@ -98,18 +99,19 @@ class PaymentStatementMockMvcTest {
         testBillingCycle.setMinimumDue(new BigDecimal("100.00"));
         testBillingCycle.setCycleStatus("OPEN");
         billingCycleRepository.save(testBillingCycle);
-
-        testCard.setCardBalance(new BigDecimal("1000.00"));
-        cardRepository.save(testCard);
     }
 
     // Payment MockMvc tests
 
     @Test
     void shouldProcessPayment_GivenValidPartialPayment() throws Exception {
+        // Reset card balance
+//        testCard.setCardBalance(new BigDecimal("1000.00"));
+//        cardRepository.save(testCard);
+
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("500.00")
                 .paymentMethod("ONLINE")
                 .build();
@@ -130,7 +132,7 @@ class PaymentStatementMockMvcTest {
     void shouldProcessPayment_GivenMinimumDueAmount_SetsPaymentTypeMinimum() throws Exception {
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("100.00")
                 .paymentMethod("BANK_TRANSFER")
                 .build();
@@ -149,7 +151,7 @@ class PaymentStatementMockMvcTest {
     void shouldProcessFullPayment_AndSetPaymentTypeFull() throws Exception {
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("1000.00")
                 .paymentMethod("ONLINE")
                 .build();
@@ -168,7 +170,7 @@ class PaymentStatementMockMvcTest {
     void shouldRejectOverpayment_AndNotSavePayment() throws Exception {
         PaymentRequestDTO request = PaymentRequestDTO.builder()
                 .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .amountPaid("9999.00")
                 .paymentMethod("ONLINE")
                 .build();
@@ -307,54 +309,54 @@ class PaymentStatementMockMvcTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }
-
-    @Test
-    void shouldUpdateStatementAfterPayment_WhenStatementExists() throws Exception {
-        Statement statement = new Statement();
-        statement.setStatementId(UUID.randomUUID());
-        statement.setCard(testCard);
-        statement.setBillingCycle(testBillingCycle);
-        statement.setStatementDate(LocalDate.now());
-        statement.setDueDate(LocalDate.now().plusDays(21));
-        statement.setBillingStartDate(LocalDate.now().minusDays(30));
-        statement.setBillingEndDate(LocalDate.now());
-        statement.setStatementBalance(new BigDecimal("1000.00"));
-        statement.setRemainingStatementBalance(new BigDecimal("1000.00"));
-        statement.setMinimumDue(new BigDecimal("100.00"));
-        statement.setTotalInterest(BigDecimal.ZERO);
-        statement.setTotalOutstanding(new BigDecimal("1000.00"));
-        statement.setTotalFeeApplied(BigDecimal.ZERO);
-        statement.setCashAdvanceFee(BigDecimal.ZERO);
-        statement.setCarryForwardBalance(new BigDecimal("1000.00"));
-        statement.setStatementStatus(Statement.StatementStatus.GENERATED);
-        statementRepository.save(statement);
-
-        PaymentRequestDTO request = PaymentRequestDTO.builder()
-                .cardId(testCard.getCardId().toString())
-                .cycleId(testBillingCycle.getCycleId().toString())
-                .amountPaid("1000.00")
-                .paymentMethod("ONLINE")
-                .build();
-
-        mockMvc.perform(post("/payments/v1")
-                        .with(jwt().jwt(b -> b.subject("test-user")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.paymentType").value("FULL"));
-
-        mockMvc.perform(post("/statements/v1/get")
-                        .with(jwt().jwt(b -> b.subject("test-user")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                GenerateStatementRequestDTO.builder()
-                                        .cardId(testCard.getCardId().toString())
-                                        .cycleId(testBillingCycle.getCycleId().toString())
-                                        .build())))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statementStatus").value("PAID"))
-                .andExpect(jsonPath("$.remainingStatementBalance").value("0.00"));
-    }
+    // This test isn't needed anymore since payments should not be adjusting billing cycles or statements
+//    @Test
+//    void shouldUpdateStatementAfterPayment_WhenStatementExists() throws Exception {
+//        Statement statement = new Statement();
+//        statement.setStatementId(UUID.randomUUID());
+//        statement.setCard(testCard);
+//        statement.setBillingCycle(testBillingCycle);
+//        statement.setStatementDate(LocalDate.now());
+//        statement.setDueDate(LocalDate.now().plusDays(21));
+//        statement.setBillingStartDate(LocalDate.now().minusDays(30));
+//        statement.setBillingEndDate(LocalDate.now());
+//        statement.setStatementBalance(new BigDecimal("1000.00"));
+//        statement.setRemainingStatementBalance(new BigDecimal("1000.00"));
+//        statement.setMinimumDue(new BigDecimal("100.00"));
+//        statement.setTotalInterest(BigDecimal.ZERO);
+//        statement.setTotalOutstanding(new BigDecimal("1000.00"));
+//        statement.setTotalFeeApplied(BigDecimal.ZERO);
+//        statement.setCashAdvanceFee(BigDecimal.ZERO);
+//        statement.setCarryForwardBalance(new BigDecimal("1000.00"));
+//        statement.setStatementStatus(Statement.StatementStatus.GENERATED);
+//        statementRepository.save(statement);
+//
+//        PaymentRequestDTO request = PaymentRequestDTO.builder()
+//                .cardId(testCard.getCardId().toString())
+////                .cycleId(testBillingCycle.getCycleId().toString())
+//                .amountPaid("1000.00")
+//                .paymentMethod("ONLINE")
+//                .build();
+//
+//        mockMvc.perform(post("/payments/v1")
+//                        .with(jwt().jwt(b -> b.subject("test-user")))
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(request)))
+//                .andDo(print())
+//                .andExpect(status().isCreated())
+//                .andExpect(jsonPath("$.paymentType").value("FULL"));
+//
+//        mockMvc.perform(post("/statements/v1/get")
+//                        .with(jwt().jwt(b -> b.subject("test-user")))
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(
+//                                GenerateStatementRequestDTO.builder()
+//                                        .cardId(testCard.getCardId().toString())
+//                                        .cycleId(testBillingCycle.getCycleId().toString())
+//                                        .build())))
+//                .andDo(print())
+//                .andExpect(status().isOk())
+//                .andExpect(jsonPath("$.statementStatus").value("PAID"))
+//                .andExpect(jsonPath("$.remainingStatementBalance").value("0.00"));
+//    }
 }

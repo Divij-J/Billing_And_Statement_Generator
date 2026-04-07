@@ -60,6 +60,8 @@ class BillingServiceTest {
         card.setLateFeeAmount(new BigDecimal("25.00"));
         card.setAnnualMembershipFee(new BigDecimal("75.00"));
         card.setCardIssueDate(LocalDate.now().minusYears(2));
+        card.setCardBalance(BigDecimal.ZERO);
+        card.setCashAdvanceBalance(BigDecimal.ZERO);
 
         lastCycle = BillingCycle.builder()
                 .cycleId(UUID.randomUUID())
