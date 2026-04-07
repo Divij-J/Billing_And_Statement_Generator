@@ -49,32 +49,26 @@ class PaymentServiceTest {
     private UUID cardId;
     private UUID cycleId;
     private UUID paymentId;
-    private UUID statementId;
     private Card testCard;
-    private BillingCycle testBillingCycle;
     private Payment testPayment;
-    private Statement testStatement;
 
     @BeforeEach
     void setUp() {
         cardId = UUID.randomUUID();
         cycleId = UUID.randomUUID();
         paymentId = UUID.randomUUID();
-        statementId = UUID.randomUUID();
 
-        testCard = Card.builder().cardId(cardId).build();
-
-        testBillingCycle = BillingCycle.builder()
-                .cycleId(cycleId)
-                .card(testCard)
-                .totalOutstanding(new BigDecimal("1000.00"))
-                .minimumDue(new BigDecimal("100.00"))
+        testCard = Card.builder()
+                .cardId(cardId)
+                .cardBalance(BigDecimal.valueOf(1000))
+                .cashAdvanceBalance(BigDecimal.valueOf(0))
+                .minimumDue(BigDecimal.valueOf(100))
                 .build();
 
         testPayment = Payment.builder()
                 .paymentId(paymentId)
                 .card(testCard)
-                .billingCycle(testBillingCycle)
+                .billingCycle(BillingCycle.builder().cycleId(cycleId).build())
                 .amountPaid(new BigDecimal("500.00"))
                 .paymentDate(LocalDateTime.now())
                 .paymentType(Payment.PaymentType.PARTIAL)
@@ -82,28 +76,9 @@ class PaymentServiceTest {
                 .paymentMethod(Payment.PaymentMethod.ONLINE)
                 .build();
 
-        testStatement = Statement.builder()
-                .statementId(statementId)
-                .card(testCard)
-                .billingCycle(testBillingCycle)
-                .statementDate(LocalDate.now())
-                .dueDate(LocalDate.now().plusDays(21))
-                .billingStartDate(LocalDate.now().minusDays(30))
-                .billingEndDate(LocalDate.now())
-                .statementBalance(new BigDecimal("1000.00"))
-                .remainingStatementBalance(new BigDecimal("1000.00"))
-                .minimumDue(new BigDecimal("100.00"))
-                .totalInterest(new BigDecimal("20.00"))
-                .totalOutstanding(new BigDecimal("1000.00"))
-                .totalFeeApplied(new BigDecimal("50.00"))
-                .cashAdvanceFee(BigDecimal.ZERO)
-                .carryForwardBalance(new BigDecimal("1000.00"))
-                .statementStatus(Statement.StatementStatus.GENERATED)
-                .build();
     }
 
 // processPayment() — happy path
-
     @Test
     void givenValidPartialPayment_whenProcessPaymentCalled_thenReturnsPaymentResponse() {
         PaymentRequestDTO dto = buildDto("500.00");
@@ -119,13 +94,10 @@ class PaymentServiceTest {
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
         when(cardService.applyPayment(cardId, new BigDecimal("500.00")))
                 .thenReturn(new BigDecimal("500.00"));
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
+        when(paymentMapper.toEntity(any(), any())).thenReturn(testPayment);
         when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.of(testStatement));
-        when(statementRepository.save(any(Statement.class))).thenReturn(testStatement);
         when(paymentMapper.toResponseDTO(testPayment)).thenReturn(expectedResponse);
 
         PaymentResponseDTO result = paymentService.processPayment(dto);
@@ -135,23 +107,18 @@ class PaymentServiceTest {
         assertThat(result.getAmountPaid()).isEqualTo("500.00");
 
         verify(cardService).applyPayment(cardId, new BigDecimal("500.00"));
-        verify(billingCycleRepository).save(any(BillingCycle.class));
-        verify(statementRepository).save(any(Statement.class));
         verify(paymentRepository).save(any(Payment.class));
     }
 
     // Server determines payment type
-
     @Test
     void givenFullPaymentAmount_whenProcessPaymentCalled_thenPaymentTypeIsFull() {
         PaymentRequestDTO dto = buildDto("1000.00");
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
         when(cardService.applyPayment(cardId, new BigDecimal("1000.00")))
                 .thenReturn(BigDecimal.ZERO);
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
+        when(paymentMapper.toEntity(any(), any())).thenReturn(testPayment);
         when(paymentMapper.toResponseDTO(any())).thenReturn(
                 PaymentResponseDTO.builder().paymentType("FULL").paymentStatus("SUCCESS").build());
 
@@ -168,11 +135,9 @@ class PaymentServiceTest {
         PaymentRequestDTO dto = buildDto("100.00");
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
         when(cardService.applyPayment(cardId, new BigDecimal("100.00")))
                 .thenReturn(new BigDecimal("900.00"));
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
+        when(paymentMapper.toEntity(any(), any())).thenReturn(testPayment);
         when(paymentMapper.toResponseDTO(any())).thenReturn(
                 PaymentResponseDTO.builder().paymentType("MINIMUM").paymentStatus("SUCCESS").build());
 
@@ -185,13 +150,11 @@ class PaymentServiceTest {
     }
 
     //Overpayment - payment must NOT be saved
-
     @Test
     void givenOverpaymentAmount_whenProcessPaymentCalled_thenThrowsAndPaymentNotSaved() {
         PaymentRequestDTO dto = buildDto("9999.00");
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
         when(cardService.applyPayment(cardId, new BigDecimal("9999.00")))
                 .thenThrow(new CardService.LimitExceededException("Payment amount exceeds current balance"));
 
@@ -200,94 +163,8 @@ class PaymentServiceTest {
         verify(paymentRepository, never()).save(any());
     }
 
-    // BillingCycle totalOutstanding updated
-
-    @Test
-    void givenValidPayment_whenProcessed_thenBillingCycleTotalOutstandingIsReduced() {
-        PaymentRequestDTO dto = buildDto("300.00");
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testBillingCycle.getCard()));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
-        when(cardService.applyPayment(cardId, new BigDecimal("300.00")))
-                .thenReturn(new BigDecimal("700.00"));
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
-        when(paymentRepository.save(any())).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
-        when(paymentMapper.toResponseDTO(any())).thenReturn(new PaymentResponseDTO());
-
-        paymentService.processPayment(dto);
-
-        verify(billingCycleRepository).save(argThat(bc ->
-                bc.getTotalOutstanding().compareTo(new BigDecimal("700.00")) == 0));
-    }
-
-    // Statement updated after payment
-
-    @Test
-    void givenStatementExists_whenPartialPaymentProcessed_thenStatementRemainingBalanceIsReduced() {
-        PaymentRequestDTO dto = buildDto("400.00");
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
-        when(cardService.applyPayment(cardId, new BigDecimal("400.00")))
-                .thenReturn(new BigDecimal("600.00"));
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
-        when(paymentRepository.save(any())).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.of(testStatement));
-        when(statementRepository.save(any())).thenReturn(testStatement);
-        when(paymentMapper.toResponseDTO(any())).thenReturn(new PaymentResponseDTO());
-
-        paymentService.processPayment(dto);
-
-        verify(statementRepository).save(argThat(s ->
-                s.getRemainingStatementBalance().compareTo(new BigDecimal("600.00")) == 0
-                        && s.getStatementStatus() == Statement.StatementStatus.UNPAID));
-    }
-
-    @Test
-    void givenStatementExists_whenFullPaymentProcessed_thenStatementStatusIsPaid() {
-        testBillingCycle.setTotalOutstanding(new BigDecimal("1000.00"));
-        testStatement.setRemainingStatementBalance(new BigDecimal("1000.00"));
-
-        PaymentRequestDTO dto = buildDto("1000.00");
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
-        when(cardService.applyPayment(cardId, new BigDecimal("1000.00")))
-                .thenReturn(BigDecimal.ZERO);
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
-        when(paymentRepository.save(any())).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.of(testStatement));
-        when(statementRepository.save(any())).thenReturn(testStatement);
-        when(paymentMapper.toResponseDTO(any())).thenReturn(new PaymentResponseDTO());
-
-        paymentService.processPayment(dto);
-
-        verify(statementRepository).save(argThat(s ->
-                s.getRemainingStatementBalance().compareTo(BigDecimal.ZERO) == 0
-                        && s.getStatementStatus() == Statement.StatementStatus.PAID));
-    }
-
-    @Test
-    void givenNoStatementForCycle_whenPaymentProcessed_thenNoStatementSaveAttempted() {
-        PaymentRequestDTO dto = buildDto("200.00");
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
-        when(cardService.applyPayment(cardId, new BigDecimal("200.00")))
-                .thenReturn(new BigDecimal("800.00"));
-        when(paymentMapper.toEntity(any(), any(), any())).thenReturn(testPayment);
-        when(paymentRepository.save(any())).thenReturn(testPayment);
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
-        when(paymentMapper.toResponseDTO(any())).thenReturn(new PaymentResponseDTO());
-
-        paymentService.processPayment(dto);
-
-        verify(statementRepository, never()).save(any());
-    }
 
     // Error cases
-
     @Test
     void givenNonExistentCard_whenProcessPaymentCalled_thenThrowsException() {
         when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
@@ -298,34 +175,7 @@ class PaymentServiceTest {
         verify(paymentRepository, never()).save(any());
     }
 
-    @Test
-    void givenNonExistentCycle_whenProcessPaymentCalled_thenThrowsException() {
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class,
-                () -> paymentService.processPayment(buildDto("500.00")));
-
-        verify(paymentRepository, never()).save(any());
-    }
-
-    @Test
-    void givenCycleNotBelongingToCard_whenProcessPaymentCalled_thenThrowsException() {
-        Card differentCard = Card.builder().cardId(UUID.randomUUID()).build();
-        BillingCycle wrongCycle = BillingCycle.builder()
-                .cycleId(cycleId).card(differentCard).build();
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(wrongCycle));
-
-        assertThrows(RuntimeException.class,
-                () -> paymentService.processPayment(buildDto("500.00")));
-
-        verify(paymentRepository, never()).save(any());
-    }
-
     // getPaymentHistory()
-
     @Test
     void givenValidCardId_whenGetPaymentHistoryCalled_thenReturnsPaymentList() {
         RetrievePaymentHistoryDTO historyDTO = RetrievePaymentHistoryDTO.builder()
@@ -376,7 +226,6 @@ class PaymentServiceTest {
     private PaymentRequestDTO buildDto(String amount) {
         return PaymentRequestDTO.builder()
                 .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
                 .amountPaid(amount)
                 .paymentMethod("ONLINE")
                 .build();
