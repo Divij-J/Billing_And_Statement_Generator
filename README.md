@@ -54,7 +54,7 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 ![ER](https://github.com/user-attachments/assets/9c82d716-2c0f-4fc2-8e0a-5646ae7bbb50)
 
 ## Future Enhancements
-* **Microservice Migration**: Refactor the current monolithic Spring Boot application into independent microservices — one per domain (Customer Service, Card Service, Transaction Service, Billing Service, Payment Service, Statement Service) — communicating via REST or messaging queues (e.g. Kafka/RabbitMQ).
+* **Microservice Migration**: Refactor the current monolithic Spring Boot application into independent microservices, one per domain (Customer Service, Card Service, Transaction Service, Billing Service, Payment Service, Statement Service), communicating via REST or messaging queues (e.g. Kafka/RabbitMQ).
 * **BDD & Contract Testing**: Implement Behavior-Driven Development test scenarios using Gherkin (Given-When-Then) and the Cucumber framework for all API endpoints. Expand PACT contract testing coverage to include all service interactions.
 * **Rewards Points System**: Implement an optional rewards points engine where cardholders earn points on purchases. Points would be tracked per transaction, accumulated on the billing cycle, and redeemable against the statement balance.
 * **PDF Statement Download**: Add a dedicated endpoint POST /statements/v1/download that generates and returns the billing statement as a downloadable PDF file using iText7, providing clients with a print-ready document.
