@@ -3,15 +3,11 @@ package com.example.billing_and_statement_generator.services;
 import com.example.billing_and_statement_generator.dto.payment.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.payment.PaymentResponseDTO;
 import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
-import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;
-import com.example.billing_and_statement_generator.entity.Statement;
 import com.example.billing_and_statement_generator.mapper.PaymentMapper;
-import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
 import com.example.billing_and_statement_generator.repository.CardRepository;
 import com.example.billing_and_statement_generator.repository.PaymentRepository;
-import com.example.billing_and_statement_generator.repository.StatementRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,8 +26,6 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final CardRepository cardRepository;
-    private final BillingCycleRepository billingCycleRepository;
-    private final StatementRepository statementRepository;
     private final PaymentMapper paymentMapper;
     private final CardService cardService;
 
@@ -41,19 +35,16 @@ public class PaymentService {
 
         // Validate card and billing cycle
         UUID cardId = UUID.fromString(dto.getCardId());
-        UUID cycleId = UUID.fromString(dto.getCycleId());
 
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card not found: " + dto.getCardId()));
 
-        BillingCycle billingCycle = billingCycleRepository.findById(cycleId)
-                .orElseThrow(() -> new RuntimeException("Billing cycle not found: " + dto.getCycleId()));
-
-        if (!billingCycle.getCard().getCardId().equals(card.getCardId())) {
-            throw new RuntimeException("Billing cycle does not belong to this card");
-        }
-
         BigDecimal amountPaid = new BigDecimal(dto.getAmountPaid());
+
+        // Server determines payment type
+        BigDecimal totalOutstanding = card.getCardBalance().add(card.getCashAdvanceBalance());
+        BigDecimal minimumDue = card.getMinimumDue() != null
+                ? card.getMinimumDue() : BigDecimal.ZERO;
 
         // Attempt balance update BEFORE saving payment
         // cardService.applyPayment throws LimitExceededException on overpayment.
@@ -68,16 +59,10 @@ public class PaymentService {
             throw new RuntimeException("Payment rejected: " + e.getMessage());
         }
 
-        // Server determines payment type
-        BigDecimal totalOutstanding = billingCycle.getTotalOutstanding() != null
-                ? billingCycle.getTotalOutstanding() : BigDecimal.ZERO;
-        BigDecimal minimumDue = billingCycle.getMinimumDue() != null
-                ? billingCycle.getMinimumDue() : BigDecimal.ZERO;
-
         Payment.PaymentType paymentType = determinePaymentType(amountPaid, totalOutstanding, minimumDue);
 
         // Build and save payment with server-determined type and SUCCESS status
-        Payment payment = paymentMapper.toEntity(dto, card, billingCycle);
+        Payment payment = paymentMapper.toEntity(dto, card);
         payment.setPaymentType(paymentType);
         payment.setPaymentStatus(Payment.PaymentStatus.SUCCESS);
 
@@ -85,40 +70,6 @@ public class PaymentService {
         log.info("Payment saved: paymentId={}, cardId={}, amount={}, type={}, status={}",
                 savedPayment.getPaymentId(), cardId, amountPaid, paymentType,
                 Payment.PaymentStatus.SUCCESS);
-
-        // Update BillingCycle totalOutstanding after payment
-        BigDecimal updatedOutstanding = totalOutstanding.subtract(amountPaid)
-                .max(BigDecimal.ZERO);
-        billingCycle.setTotalOutstanding(updatedOutstanding);
-        billingCycleRepository.save(billingCycle);
-        log.debug("BillingCycle totalOutstanding updated: cycleId={}, old={}, new={}",
-                cycleId, totalOutstanding, updatedOutstanding);
-
-        // Update Statement remainingBalance, carryForward, and status if exists
-        Optional<Statement> statementOpt = statementRepository.findByCycleId(cycleId);
-        if (statementOpt.isPresent()) {
-            Statement statement = statementOpt.get();
-
-            BigDecimal newRemaining = statement.getRemainingStatementBalance()
-                    .subtract(amountPaid)
-                    .max(BigDecimal.ZERO);
-
-            statement.setRemainingStatementBalance(newRemaining);
-            statement.setCarryForwardBalance(newRemaining);
-
-            // Flip to PAID if fully paid off
-            if (newRemaining.compareTo(BigDecimal.ZERO) == 0) {
-                statement.setStatementStatus(Statement.StatementStatus.PAID);
-                log.info("Statement fully paid: statementId={}, cycleId={}",
-                        statement.getStatementId(), cycleId);
-            } else {
-                statement.setStatementStatus(Statement.StatementStatus.UNPAID);
-            }
-
-            statementRepository.save(statement);
-            log.debug("Statement updated: statementId={}, remainingBalance={}, status={}",
-                    statement.getStatementId(), newRemaining, statement.getStatementStatus());
-        }
 
         return paymentMapper.toResponseDTO(savedPayment);
     }

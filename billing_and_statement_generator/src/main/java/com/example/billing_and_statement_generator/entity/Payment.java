@@ -22,9 +22,8 @@ public class Payment {
     @Column(name = "payment_id", nullable = false, updatable = false)
     private UUID paymentId;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cycle_id", nullable = false)
+    @JoinColumn(name = "cycle_id", nullable = true)
     private BillingCycle billingCycle;
 
     @NotNull

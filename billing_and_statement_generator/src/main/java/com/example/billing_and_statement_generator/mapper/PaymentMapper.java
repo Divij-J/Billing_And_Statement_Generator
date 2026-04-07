@@ -22,13 +22,12 @@ public class PaymentMapper {
      */
     public Payment toEntity(
             PaymentRequestDTO dto,
-            Card card,
-            BillingCycle billingCycle
+            Card card
     ) {
         return Payment.builder()
                 .paymentId(UUID.randomUUID())
                 .card(card)
-                .billingCycle(billingCycle)
+//                .billingCycle(billingCycle)
                 .amountPaid(new BigDecimal(dto.getAmountPaid()))
                 .paymentDate(LocalDateTime.now())
                 // paymentType set by service (FULL / PARTIAL / MINIMUM)
@@ -51,7 +50,11 @@ public class PaymentMapper {
     public PaymentResponseDTO toResponseDTO(Payment payment) {
         return PaymentResponseDTO.builder()
                 .paymentId(payment.getPaymentId().toString())
-                .cycleId(payment.getBillingCycle().getCycleId().toString())
+                .cycleId(
+                        payment.getBillingCycle() != null
+                                ? payment.getBillingCycle().getCycleId().toString()
+                                : null
+                )
                 .cardId(payment.getCard().getCardId().toString())
                 .amountPaid(payment.getAmountPaid().toString())
                 .paymentDate(payment.getPaymentDate().toString())
@@ -65,7 +68,11 @@ public class PaymentMapper {
     public RetrievePaymentHistoryDTO toHistoryDTO(Payment payment) {
         return RetrievePaymentHistoryDTO.builder()
                 .paymentId(payment.getPaymentId().toString())
-                .cycleId(payment.getBillingCycle().getCycleId().toString())
+                .cycleId(
+                        payment.getBillingCycle() != null
+                                ? payment.getBillingCycle().getCycleId().toString()
+                                : null
+                )
                 .cardId(payment.getCard().getCardId().toString())
                 .amountPaid(payment.getAmountPaid().toString())
                 .paymentDate(payment.getPaymentDate().toString())
