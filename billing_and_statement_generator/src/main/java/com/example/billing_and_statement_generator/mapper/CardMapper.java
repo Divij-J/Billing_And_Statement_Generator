@@ -15,6 +15,7 @@ public interface CardMapper {
             @Mapping(target = "active", ignore = true),
             @Mapping(target = "cardBalance", ignore = true),
             @Mapping(target = "cashAdvanceBalance", ignore = true),
+            @Mapping(target = "availableCredit", ignore = true),
             @Mapping(target = "creditLimit", ignore = true),
             @Mapping(target = "annualInterestRate", ignore = true),
             @Mapping(target = "billingCycleDate", ignore = true),

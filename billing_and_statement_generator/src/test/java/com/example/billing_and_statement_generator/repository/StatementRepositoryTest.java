@@ -60,6 +60,7 @@ class StatementRepositoryTest {
         card.setCardBalance(BigDecimal.ZERO);
         card.setCashAdvanceBalance(BigDecimal.ZERO);
         card.setCreditLimit(new BigDecimal("5000.00"));
+        card.setAvailableCredit(new BigDecimal("5000.00"));
         card.setAnnualInterestRate(new BigDecimal("0.24"));
         card.setBillingCycleDate(LocalDate.now());
         card.setLateFeeAmount(new BigDecimal("50.00"));

@@ -315,6 +315,8 @@ public class BillingService {
     private BillingCycleResponseDTO toResponseDTO(BillingCycle cycle,
                                                   List<Transaction> txns,
                                                   BigDecimal feesApplied) {
+        Card card = cycle.getCard();
+
         return BillingCycleResponseDTO.builder()
                 .cycleId(cycle.getCycleId())
                 .cardId(cycle.getCard().getCardId())
@@ -330,6 +332,7 @@ public class BillingService {
                 .totalOutstanding(cycle.getTotalOutstanding())
                 .minimumDue(cycle.getMinimumDue())
                 .cycleStatus(cycle.getCycleStatus())
+                .availableCredit(card.getAvailableCredit())
                 .transaction(buildTxnDTOs(cycle, txns))
                 .build();
     }

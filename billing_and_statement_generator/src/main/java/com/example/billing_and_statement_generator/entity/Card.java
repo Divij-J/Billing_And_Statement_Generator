@@ -66,6 +66,11 @@ public class Card {
 
     @NotNull
     @PositiveOrZero
+    @Column(name = "available_credit", nullable = false, precision = 15, scale = 2)
+    private BigDecimal availableCredit;
+
+    @NotNull
+    @PositiveOrZero
     @Column(name = "credit_limit", nullable = false, precision = 15, scale = 2)
     private BigDecimal creditLimit;
 
