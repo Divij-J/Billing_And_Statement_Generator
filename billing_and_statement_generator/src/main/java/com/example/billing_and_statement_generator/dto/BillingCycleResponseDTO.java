@@ -43,4 +43,6 @@ public class BillingCycleResponseDTO{
 
     // Transaction List
     private List<CreateTransactionResponseDTO> transaction;
+
+    private BigDecimal availableCredit;
 }
