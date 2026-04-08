@@ -51,16 +51,6 @@ public class StatementMapper {
                 .build();
     }
 
-    public GenerateStatementResponseDTO toGenerateResponseDTO(Statement statement) {
-        return GenerateStatementResponseDTO.builder()
-                .statementId(statement.getStatementId().toString())
-                .cardId(statement.getCard().getCardId().toString())
-                .cycleId(statement.getBillingCycle().getCycleId().toString())
-                .statementStatus(statement.getStatementStatus().toString())
-                .message("Statement generated successfully")
-                .build();
-    }
-
     public RetrieveStatementResponseDTO toRetrieveResponseDTO(
             Statement statement,
             List<CreateTransactionResponseDTO> transactions) {
@@ -80,6 +70,8 @@ public class StatementMapper {
                 .totalFeeApplied(statement.getTotalFeeApplied().toString())
                 .cashAdvanceFee(statement.getCashAdvanceFee().toString())
                 .carryForwardBalance(statement.getCarryForwardBalance().toString())
+                .availableCredit(statement.getCard().getAvailableCredit() != null
+                        ? statement.getCard().getAvailableCredit().toString() : "0.00")
                 .statementStatus(statement.getStatementStatus().toString())
                 .transactions(transactions)
                 .build();

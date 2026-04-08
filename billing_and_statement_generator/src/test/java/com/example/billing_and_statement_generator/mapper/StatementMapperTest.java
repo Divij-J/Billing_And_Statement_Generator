@@ -1,6 +1,5 @@
 package com.example.billing_and_statement_generator.mapper;
 
-import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
@@ -37,6 +36,7 @@ class StatementMapperTest {
     void setUp() {
         testCard = Card.builder()
                 .cardId(UUID.randomUUID())
+                .availableCredit(new BigDecimal("4000.00"))
                 .build();
 
         testBillingCycle = BillingCycle.builder()
@@ -48,7 +48,7 @@ class StatementMapperTest {
                 .build();
     }
 
-    // toEntity() tests
+// toEntity() tests
 
     @Test
     void givenValidInputs_whenToEntityCalled_thenReturnsStatementEntity() {
@@ -101,23 +101,7 @@ class StatementMapperTest {
         assertThat(result.getStatementId()).isNotNull();
     }
 
-    // toGenerateResponseDTO() tests
-
-    @Test
-    void givenStatement_whenToGenerateResponseDTOCalled_thenReturnsCorrectDTO() {
-        Statement statement = buildStatement(Statement.StatementStatus.GENERATED);
-
-        GenerateStatementResponseDTO result = statementMapper.toGenerateResponseDTO(statement);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getStatementId()).isEqualTo(statement.getStatementId().toString());
-        assertThat(result.getCardId()).isEqualTo(testCard.getCardId().toString());
-        assertThat(result.getCycleId()).isEqualTo(testBillingCycle.getCycleId().toString());
-        assertThat(result.getStatementStatus()).isEqualTo("GENERATED");
-        assertThat(result.getMessage()).isEqualTo("Statement generated successfully");
-    }
-
-    // toRetrieveResponseDTO() tests
+// toRetrieveResponseDTO() tests
 
     @Test
     void givenStatementWithTransactions_whenToRetrieveResponseDTOCalled_thenReturnsCorrectDTO() {
@@ -141,7 +125,7 @@ class StatementMapperTest {
                 .statementStatus(Statement.StatementStatus.UNPAID)
                 .build();
 
-        List<CreateTransactionResponseDTO> transactions = List.of(
+        List&lt;CreateTransactionResponseDTO&gt; transactions = List.of(
                 CreateTransactionResponseDTO.builder()
                         .transactionId(UUID.randomUUID())
                         .cardId(testCard.getCardId())
@@ -172,6 +156,8 @@ class StatementMapperTest {
         assertThat(result.getMinimumDue()).isEqualTo("100.00");
         assertThat(result.getTotalInterest()).isEqualTo("20.00");
         assertThat(result.getStatementStatus()).isEqualTo("UNPAID");
+        assertThat(result.getAvailableCredit()).isEqualTo("4000.00");
+        assertThat(result.getMessage()).isEqualTo("Statement generated successfully");
         assertThat(result.getTransactions()).hasSize(2);
         assertThat(result.getTransactions().get(0).getMerchantName()).isEqualTo("Amazon");
         assertThat(result.getTransactions().get(1).getMerchantName()).isEqualTo("Best Buy");
@@ -186,6 +172,8 @@ class StatementMapperTest {
 
         assertThat(result.getTransactions()).isNotNull();
         assertThat(result.getTransactions()).isEmpty();
+        assertThat(result.getAvailableCredit()).isEqualTo("4000.00");
+        assertThat(result.getMessage()).isEqualTo("Statement generated successfully");
     }
 
     @Test
@@ -214,11 +202,45 @@ class StatementMapperTest {
 
         assertThat(result.getStatementStatus()).isEqualTo("PAID");
         assertThat(result.getRemainingStatementBalance()).isEqualTo("0");
+        assertThat(result.getAvailableCredit()).isEqualTo("4000.00");
         assertThat(result.getTransactions()).isEmpty();
     }
 
-    // Helper
+    @Test
+    void givenCardWithNullAvailableCredit_whenToRetrieveResponseDTOCalled_thenAvailableCreditIsZero() {
+        Card cardWithNullCredit = Card.builder()
+                .cardId(UUID.randomUUID())
+                .availableCredit(null)
+                .build();
 
+        testBillingCycle.setCard(cardWithNullCredit);
+
+        Statement statement = Statement.builder()
+                .statementId(UUID.randomUUID())
+                .card(cardWithNullCredit)
+                .billingCycle(testBillingCycle)
+                .statementDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusDays(21))
+                .billingStartDate(LocalDate.now().minusDays(30))
+                .billingEndDate(LocalDate.now())
+                .statementBalance(new BigDecimal("1020.00"))
+                .remainingStatementBalance(new BigDecimal("1020.00"))
+                .minimumDue(new BigDecimal("100.00"))
+                .totalInterest(new BigDecimal("20.00"))
+                .totalOutstanding(new BigDecimal("1020.00"))
+                .totalFeeApplied(BigDecimal.ZERO)
+                .cashAdvanceFee(BigDecimal.ZERO)
+                .carryForwardBalance(new BigDecimal("1020.00"))
+                .statementStatus(Statement.StatementStatus.GENERATED)
+                .build();
+
+        RetrieveStatementResponseDTO result =
+                statementMapper.toRetrieveResponseDTO(statement, List.of());
+
+        assertThat(result.getAvailableCredit()).isEqualTo("0.00");
+    }
+
+    // Helper
     private Statement buildStatement(Statement.StatementStatus status) {
         return Statement.builder()
                 .statementId(UUID.randomUUID())
@@ -239,4 +261,5 @@ class StatementMapperTest {
                 .statementStatus(status)
                 .build();
     }
+
 }

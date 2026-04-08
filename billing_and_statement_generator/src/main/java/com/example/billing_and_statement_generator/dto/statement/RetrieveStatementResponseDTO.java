@@ -29,6 +29,7 @@ public class RetrieveStatementResponseDTO {
     private String totalFeeApplied;
     private String cashAdvanceFee;
     private String carryForwardBalance;
+    private String availableCredit;
     private String statementStatus;
 
     // Transaction list for the billing cycle

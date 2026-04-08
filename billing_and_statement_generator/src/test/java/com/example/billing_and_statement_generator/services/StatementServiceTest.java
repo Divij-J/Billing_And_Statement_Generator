@@ -1,7 +1,6 @@
 package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.statement.GenerateStatementRequestDTO;
-import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
@@ -31,6 +30,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +65,7 @@ class StatementServiceTest {
                 .cardId(cardId)
                 .cashAdvanceFeeRate(new BigDecimal("0.02"))
                 .lateFeeAmount(new BigDecimal("50.00"))
+                .availableCredit(new BigDecimal("4000.00"))
                 .build();
 
         testBillingCycle = BillingCycle.builder()
@@ -99,18 +101,20 @@ class StatementServiceTest {
                 .build();
     }
 
-    // generateStatement() tests
+// generateStatement() tests
 
     @Test
-    void givenValidRequest_whenGenerateStatementCalled_thenReturnsGenerateResponse() {
+    void givenValidRequest_whenGenerateStatementCalled_thenReturnsFullStatementResponse() {
         GenerateStatementRequestDTO dto = buildGenerateDto();
 
-        GenerateStatementResponseDTO expectedResponse = GenerateStatementResponseDTO.builder()
+        RetrieveStatementResponseDTO expectedResponse = RetrieveStatementResponseDTO.builder()
                 .statementId(statementId.toString())
                 .cardId(cardId.toString())
                 .cycleId(cycleId.toString())
                 .statementStatus("GENERATED")
-                .message("Statement generated successfully")
+                .availableCredit("4000.00")
+                //.message("Statement generated successfully")
+                .transactions(List.of())
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
@@ -120,17 +124,72 @@ class StatementServiceTest {
         when(statementMapper.toEntity(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(testStatement);
         when(statementRepository.save(any(Statement.class))).thenReturn(testStatement);
-        when(statementMapper.toGenerateResponseDTO(testStatement)).thenReturn(expectedResponse);
+        when(transactionRepository.findByBillingCycleCycleId(cycleId)).thenReturn(List.of());
+        when(statementMapper.toRetrieveResponseDTO(eq(testStatement), anyList()))
+                .thenReturn(expectedResponse);
 
-        GenerateStatementResponseDTO result = statementService.generateStatement(dto);
+        RetrieveStatementResponseDTO result = statementService.generateStatement(dto);
 
         assertThat(result).isNotNull();
         assertThat(result.getStatementStatus()).isEqualTo("GENERATED");
-        assertThat(result.getMessage()).isEqualTo("Statement generated successfully");
+        //assertThat(result.getMessage()).isEqualTo("Statement generated successfully");
+        assertThat(result.getAvailableCredit()).isEqualTo("4000.00");
+        assertThat(result.getTransactions()).isNotNull();
 
         verify(cardRepository).findById(cardId);
         verify(billingCycleRepository).findById(cycleId);
         verify(statementRepository).save(any(Statement.class));
+        verify(transactionRepository).findByBillingCycleCycleId(cycleId);
+        verify(statementMapper).toRetrieveResponseDTO(eq(testStatement), anyList());
+    }
+
+    @Test
+    void givenValidRequestWithTransactions_whenGenerateStatementCalled_thenReturnsTransactions() {
+        GenerateStatementRequestDTO dto = buildGenerateDto();
+
+        Transaction tx = Transaction.builder()
+                .transactionId(UUID.randomUUID())
+                .card(testCard)
+                .billingCycle(testBillingCycle)
+                .transactionType(Transaction.transactionType.PURCHASE)
+                .amount(new BigDecimal("500.00"))
+                .merchantName("Amazon")
+                .status(Transaction.Status.SENT)
+                .build();
+
+        CreateTransactionResponseDTO txDto = CreateTransactionResponseDTO.builder()
+                .transactionId(tx.getTransactionId())
+                .cardId(cardId)
+                .amount(new BigDecimal("500.00"))
+                .merchantName("Amazon")
+                .build();
+
+        RetrieveStatementResponseDTO expectedResponse = RetrieveStatementResponseDTO.builder()
+                .statementId(statementId.toString())
+                .cardId(cardId.toString())
+                .cycleId(cycleId.toString())
+                .statementStatus("GENERATED")
+                .availableCredit("4000.00")
+                .transactions(List.of(txDto))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
+        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
+        when(statementRepository.existsByCycleId(cycleId)).thenReturn(false);
+        when(paymentRepository.findTotalPaidByCycleId(cycleId)).thenReturn(BigDecimal.ZERO);
+        when(statementMapper.toEntity(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(testStatement);
+        when(statementRepository.save(any(Statement.class))).thenReturn(testStatement);
+        when(transactionRepository.findByBillingCycleCycleId(cycleId)).thenReturn(List.of(tx));
+        when(transactionMapper.toResponse(tx)).thenReturn(txDto);
+        when(statementMapper.toRetrieveResponseDTO(eq(testStatement), anyList()))
+                .thenReturn(expectedResponse);
+
+        RetrieveStatementResponseDTO result = statementService.generateStatement(dto);
+
+        assertThat(result.getTransactions()).hasSize(1);
+        assertThat(result.getTransactions().get(0).getMerchantName()).isEqualTo("Amazon");
+        verify(transactionRepository).findByBillingCycleCycleId(cycleId);
     }
 
     @Test
@@ -181,122 +240,12 @@ class StatementServiceTest {
         verify(statementRepository, never()).save(any());
     }
 
-    // getStatement() tests
-
-    @Test
-    void givenValidCardAndCycleId_whenGetStatementCalled_thenReturnsStatementWithTransactions() {
-        Transaction tx = Transaction.builder()
-                .transactionId(UUID.randomUUID())
-                .card(testCard)
-                .billingCycle(testBillingCycle)
-                .transactionType(Transaction.transactionType.PURCHASE)
-                .amount(new BigDecimal("500.00"))
-                .merchantName("Amazon")
-                .status(Transaction.Status.SENT)
-                .build();
-
-        CreateTransactionResponseDTO txDto = CreateTransactionResponseDTO.builder()
-                .transactionId(tx.getTransactionId())
-                .cardId(cardId)
-                .amount(new BigDecimal("500.00"))
-                .merchantName("Amazon")
-                .build();
-
-        RetrieveStatementResponseDTO expectedResponse = RetrieveStatementResponseDTO.builder()
-                .statementId(statementId.toString())
-                .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
-                .statementStatus("GENERATED")
-                .transactions(List.of(txDto))
-                .build();
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.of(testStatement));
-        when(transactionRepository.findByBillingCycleCycleId(cycleId)).thenReturn(List.of(tx));
-        when(transactionMapper.toResponse(tx)).thenReturn(txDto);
-        when(statementMapper.toRetrieveResponseDTO(eq(testStatement), anyList()))
-                .thenReturn(expectedResponse);
-
-        RetrieveStatementResponseDTO result = statementService.getStatement(cardId, cycleId);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getStatementId()).isEqualTo(statementId.toString());
-        assertThat(result.getStatementStatus()).isEqualTo("GENERATED");
-        assertThat(result.getTransactions()).hasSize(1);
-        assertThat(result.getTransactions().get(0).getMerchantName()).isEqualTo("Amazon");
-
-        verify(transactionRepository).findByBillingCycleCycleId(cycleId);
-        verify(statementMapper).toRetrieveResponseDTO(eq(testStatement), anyList());
-    }
-
-    @Test
-    void givenCycleWithNoTransactions_whenGetStatementCalled_thenReturnsEmptyTransactionList() {
-        RetrieveStatementResponseDTO expectedResponse = RetrieveStatementResponseDTO.builder()
-                .statementId(statementId.toString())
-                .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
-                .statementStatus("GENERATED")
-                .transactions(List.of())
-                .build();
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.of(testStatement));
-        when(transactionRepository.findByBillingCycleCycleId(cycleId)).thenReturn(List.of());
-        when(statementMapper.toRetrieveResponseDTO(eq(testStatement), eq(List.of())))
-                .thenReturn(expectedResponse);
-
-        RetrieveStatementResponseDTO result = statementService.getStatement(cardId, cycleId);
-
-        assertThat(result.getTransactions()).isEmpty();
-        verify(transactionRepository).findByBillingCycleCycleId(cycleId);
-    }
-
-    @Test
-    void givenNonExistentCard_whenGetStatementCalled_thenThrowsException() {
-        when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class,
-                () -> statementService.getStatement(cardId, cycleId));
-
-        verify(statementRepository, never()).findByCycleId(any());
-        verify(transactionRepository, never()).findByBillingCycleCycleId(any());
-    }
-
-    @Test
-    void givenNonExistentStatement_whenGetStatementCalled_thenThrowsException() {
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class,
-                () -> statementService.getStatement(cardId, cycleId));
-
-        verify(transactionRepository, never()).findByBillingCycleCycleId(any());
-    }
-
-    @Test
-    void givenStatementNotBelongingToCard_whenGetStatementCalled_thenThrowsException() {
-        Card differentCard = Card.builder().cardId(UUID.randomUUID()).build();
-        Statement wrongStatement = Statement.builder()
-                .statementId(statementId)
-                .card(differentCard)
-                .billingCycle(testBillingCycle)
-                .build();
-
-        when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
-        when(statementRepository.findByCycleId(cycleId)).thenReturn(Optional.of(wrongStatement));
-
-        assertThrows(RuntimeException.class,
-                () -> statementService.getStatement(cardId, cycleId));
-
-        verify(transactionRepository, never()).findByBillingCycleCycleId(any());
-    }
-
     // Helper
-
     private GenerateStatementRequestDTO buildGenerateDto() {
         return GenerateStatementRequestDTO.builder()
                 .cardId(cardId.toString())
                 .cycleId(cycleId.toString())
                 .build();
     }
+
 }

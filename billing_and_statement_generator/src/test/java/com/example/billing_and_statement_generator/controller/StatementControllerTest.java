@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +33,6 @@ class StatementControllerTest {
     private UUID cycleId;
     private UUID statementId;
     private GenerateStatementRequestDTO generateRequestDTO;
-    private GenerateStatementResponseDTO generateResponseDTO;
     private RetrieveStatementResponseDTO retrieveResponseDTO;
 
     @BeforeEach
@@ -44,14 +44,6 @@ class StatementControllerTest {
         generateRequestDTO = GenerateStatementRequestDTO.builder()
                 .cardId(cardId.toString())
                 .cycleId(cycleId.toString())
-                .build();
-
-        generateResponseDTO = GenerateStatementResponseDTO.builder()
-                .statementId(statementId.toString())
-                .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
-                .statementStatus("GENERATED")
-                .message("Statement generated successfully")
                 .build();
 
         retrieveResponseDTO = RetrieveStatementResponseDTO.builder()
@@ -68,7 +60,9 @@ class StatementControllerTest {
                 .totalFeeApplied("50.00")
                 .cashAdvanceFee("20.00")
                 .carryForwardBalance("1020.00")
+                .availableCredit("4000.00")
                 .statementStatus("GENERATED")
+                .transactions(List.of())
                 .build();
     }
 
@@ -77,27 +71,25 @@ class StatementControllerTest {
     @Test
     void givenValidRequest_whenGenerateStatementCalled_thenReturns201() {
         when(statementService.generateStatement(any(GenerateStatementRequestDTO.class)))
-                .thenReturn(generateResponseDTO);
+                .thenReturn(retrieveResponseDTO);
 
-        ResponseEntity<GenerateStatementResponseDTO> response =
+        ResponseEntity<RetrieveStatementResponseDTO> response =
                 statementController.generateStatement(generateRequestDTO);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getStatementStatus()).isEqualTo("GENERATED");
-        assertThat(response.getBody().getMessage())
-                .isEqualTo("Statement generated successfully");
+        assertThat(response.getBody().getMessage()).isEqualTo("Statement generated successfully");
 
-        verify(statementService).generateStatement(
-                any(GenerateStatementRequestDTO.class));
+        verify(statementService).generateStatement(any(GenerateStatementRequestDTO.class));
     }
 
     @Test
     void givenValidRequest_whenGenerateStatementCalled_thenReturnsCorrectIds() {
         when(statementService.generateStatement(any(GenerateStatementRequestDTO.class)))
-                .thenReturn(generateResponseDTO);
+                .thenReturn(retrieveResponseDTO);
 
-        ResponseEntity<GenerateStatementResponseDTO> response =
+        ResponseEntity<RetrieveStatementResponseDTO> response =
                 statementController.generateStatement(generateRequestDTO);
 
         assertThat(response.getBody().getCardId()).isEqualTo(cardId.toString());
@@ -112,46 +104,42 @@ class StatementControllerTest {
     // ── getStatement() tests ────────────────────────────────────────
 
     @Test
-    void givenValidRequest_whenGetStatementCalled_thenReturns200() {
-        when(statementService.getStatement(cardId, cycleId))
+    void givenValidRequest_whenGenerateStatementCalled_thenReturnsAvailableCredit() {
+        when(statementService.generateStatement(any(GenerateStatementRequestDTO.class)))
                 .thenReturn(retrieveResponseDTO);
 
         ResponseEntity<RetrieveStatementResponseDTO> response =
-                statementController.getStatement(generateRequestDTO);
+                statementController.generateStatement(generateRequestDTO);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getStatementId())
-                .isEqualTo(statementId.toString());
+        assertThat(response.getBody().getAvailableCredit()).isEqualTo("4000.00");
+
+        verify(statementService).generateStatement(any(GenerateStatementRequestDTO.class));
+    }
+
+    @Test
+    void givenValidRequest_whenGenerateStatementCalled_thenReturnsTransactionList() {
+        when(statementService.generateStatement(any(GenerateStatementRequestDTO.class)))
+                .thenReturn(retrieveResponseDTO);
+
+        ResponseEntity<RetrieveStatementResponseDTO> response =
+                statementController.generateStatement(generateRequestDTO);
+
+        assertThat(response.getBody().getTransactions()).isNotNull();
+        verify(statementService, times(1)).generateStatement(any(GenerateStatementRequestDTO.class));
+    }
+
+    @Test
+    void givenValidRequest_whenGenerateStatementCalled_thenReturnsCorrectBalance() {
+        when(statementService.generateStatement(any(GenerateStatementRequestDTO.class)))
+                .thenReturn(retrieveResponseDTO);
+
+        ResponseEntity<RetrieveStatementResponseDTO> response =
+                statementController.generateStatement(generateRequestDTO);
+
         assertThat(response.getBody().getStatementBalance()).isEqualTo("1020.00");
         assertThat(response.getBody().getMinimumDue()).isEqualTo("100.00");
-
-        verify(statementService).getStatement(cardId, cycleId);
-    }
-
-    @Test
-    void givenValidRequest_whenGetStatementCalled_thenReturnsCorrectStatus() {
-        when(statementService.getStatement(cardId, cycleId))
-                .thenReturn(retrieveResponseDTO);
-
-        ResponseEntity<RetrieveStatementResponseDTO> response =
-                statementController.getStatement(generateRequestDTO);
-
-        assertThat(response.getBody().getStatementStatus()).isEqualTo("GENERATED");
-        verify(statementService, times(1)).getStatement(cardId, cycleId);
-    }
-
-    @Test
-    void givenValidRequest_whenGetStatementCalled_thenReturnsCorrectBalance() {
-        when(statementService.getStatement(cardId, cycleId))
-                .thenReturn(retrieveResponseDTO);
-
-        ResponseEntity<RetrieveStatementResponseDTO> response =
-                statementController.getStatement(generateRequestDTO);
-
-        assertThat(response.getBody().getStatementBalance()).isEqualTo("1020.00");
         assertThat(response.getBody().getTotalOutstanding()).isEqualTo("1020.00");
 
-        verify(statementService, times(1)).getStatement(cardId, cycleId);
+        verify(statementService, times(1)).generateStatement(any(GenerateStatementRequestDTO.class));
     }
 }
