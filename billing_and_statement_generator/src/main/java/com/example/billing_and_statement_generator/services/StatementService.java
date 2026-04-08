@@ -1,7 +1,6 @@
 package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.statement.GenerateStatementRequestDTO;
-import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
@@ -39,7 +38,7 @@ public class StatementService {
     private final TransactionMapper transactionMapper;
 
     // POST /statements/v1/generate
-    public GenerateStatementResponseDTO generateStatement(GenerateStatementRequestDTO dto) {
+    public RetrieveStatementResponseDTO generateStatement(GenerateStatementRequestDTO dto) {
 
         // Validate card exists
         Card card = cardRepository.findById(UUID.fromString(dto.getCardId()))
@@ -109,32 +108,11 @@ public class StatementService {
 
         Statement savedStatement = statementRepository.save(statement);
 
-        return statementMapper.toGenerateResponseDTO(savedStatement);
-    }
-
-    // POST /statements/v1/get
-    public RetrieveStatementResponseDTO getStatement(UUID cardId, UUID cycleId) {
-
-        // Validate card exists
-        cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card not found: " + cardId));
-
-        // Find statement by cycle
-        Statement statement = statementRepository.findByCycleId(cycleId)
-                .orElseThrow(() -> new RuntimeException("Statement not found for cycle: " + cycleId));
-
-        // Validate statement belongs to card
-        if (!statement.getCard().getCardId().equals(cardId)) {
-            throw new RuntimeException("Statement does not belong to this card");
-        }
-
-        // Fetch transactions for this billing cycle and map to DTOs
         List<CreateTransactionResponseDTO> transactions =
-                transactionRepository.findByBillingCycleCycleId(cycleId)
+                transactionRepository.findByBillingCycleCycleId(UUID.fromString(dto.getCycleId()))
                         .stream()
                         .map(transactionMapper::toResponse)
                         .toList();
-
-        return statementMapper.toRetrieveResponseDTO(statement, transactions);
+        return statementMapper.toRetrieveResponseDTO(savedStatement, transactions);
     }
 }

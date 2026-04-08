@@ -1,6 +1,5 @@
 package com.example.billing_and_statement_generator.mapper;
 
-import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
