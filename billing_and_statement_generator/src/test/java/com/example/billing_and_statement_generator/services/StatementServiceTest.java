@@ -11,7 +11,6 @@ import com.example.billing_and_statement_generator.mapper.StatementMapper;
 import com.example.billing_and_statement_generator.mapper.TransactionMapper;
 import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
 import com.example.billing_and_statement_generator.repository.CardRepository;
-import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import com.example.billing_and_statement_generator.repository.StatementRepository;
 import com.example.billing_and_statement_generator.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +39,6 @@ class StatementServiceTest {
     @Mock private StatementRepository statementRepository;
     @Mock private CardRepository cardRepository;
     @Mock private BillingCycleRepository billingCycleRepository;
-    @Mock private PaymentRepository paymentRepository;
     @Mock private TransactionRepository transactionRepository;
     @Mock private StatementMapper statementMapper;
     @Mock private TransactionMapper transactionMapper;
@@ -66,6 +64,8 @@ class StatementServiceTest {
                 .cashAdvanceFeeRate(new BigDecimal("0.02"))
                 .lateFeeAmount(new BigDecimal("50.00"))
                 .availableCredit(new BigDecimal("4000.00"))
+                .cardBalance(new BigDecimal("1020.00"))
+                .cashAdvanceBalance(BigDecimal.ZERO)
                 .build();
 
         testBillingCycle = BillingCycle.builder()
@@ -120,7 +120,6 @@ class StatementServiceTest {
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
         when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
         when(statementRepository.existsByCycleId(cycleId)).thenReturn(false);
-        when(paymentRepository.findTotalPaidByCycleId(cycleId)).thenReturn(BigDecimal.ZERO);
         when(statementMapper.toEntity(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(testStatement);
         when(statementRepository.save(any(Statement.class))).thenReturn(testStatement);
@@ -141,6 +140,82 @@ class StatementServiceTest {
         verify(statementRepository).save(any(Statement.class));
         verify(transactionRepository).findByBillingCycleCycleId(cycleId);
         verify(statementMapper).toRetrieveResponseDTO(eq(testStatement), anyList());
+    }
+
+    @Test
+    void givenPaymentMade_whenGenerateStatementCalled_thenRemainingBalanceReflectsPayment() {
+        // Card balance is 520 after a $500 payment (original outstanding was 1020)
+        Card cardAfterPayment = Card.builder()
+                .cardId(cardId)
+                .cashAdvanceFeeRate(new BigDecimal("0.02"))
+                .lateFeeAmount(new BigDecimal("50.00"))
+                .availableCredit(new BigDecimal("4500.00"))
+                .cardBalance(new BigDecimal("520.00"))
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .build();
+
+        BillingCycle cycle = BillingCycle.builder()
+                .cycleId(cycleId)
+                .card(cardAfterPayment)
+                .cycleStartDate(LocalDate.now().minusDays(30))
+                .cycleEndDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusDays(21))
+                .totalPurchases(new BigDecimal("1000.00"))
+                .totalCashAdvance(BigDecimal.ZERO)
+                .totalInterest(new BigDecimal("20.00"))
+                .totalOutstanding(new BigDecimal("1020.00"))
+                .minimumDue(new BigDecimal("100.00"))
+                .build();
+
+        Statement statementAfterPayment = Statement.builder()
+                .statementId(statementId)
+                .card(cardAfterPayment)
+                .billingCycle(cycle)
+                .statementDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusDays(21))
+                .billingStartDate(LocalDate.now().minusDays(30))
+                .billingEndDate(LocalDate.now())
+                .statementBalance(new BigDecimal("1020.00"))
+                .remainingStatementBalance(new BigDecimal("520.00"))
+                .minimumDue(new BigDecimal("100.00"))
+                .totalInterest(new BigDecimal("20.00"))
+                .totalOutstanding(new BigDecimal("1020.00"))
+                .totalFeeApplied(BigDecimal.ZERO)
+                .cashAdvanceFee(BigDecimal.ZERO)
+                .carryForwardBalance(new BigDecimal("520.00"))
+                .statementStatus(Statement.StatementStatus.GENERATED)
+                .build();
+
+        RetrieveStatementResponseDTO expectedResponse = RetrieveStatementResponseDTO.builder()
+                .statementId(statementId.toString())
+                .cardId(cardId.toString())
+                .cycleId(cycleId.toString())
+                .statementStatus("GENERATED")
+                .statementBalance("1020.00")
+                .remainingStatementBalance("520.00")
+                .availableCredit("4500.00")
+                //.message("Statement generated successfully")
+                .transactions(List.of())
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(cardAfterPayment));
+        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(cycle));
+        when(statementRepository.existsByCycleId(cycleId)).thenReturn(false);
+        when(statementMapper.toEntity(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(statementAfterPayment);
+        when(statementRepository.save(any(Statement.class))).thenReturn(statementAfterPayment);
+        when(transactionRepository.findByBillingCycleCycleId(cycleId)).thenReturn(List.of());
+        when(statementMapper.toRetrieveResponseDTO(eq(statementAfterPayment), anyList()))
+                .thenReturn(expectedResponse);
+
+        RetrieveStatementResponseDTO result = statementService.generateStatement(
+                GenerateStatementRequestDTO.builder()
+                        .cardId(cardId.toString())
+                        .cycleId(cycleId.toString())
+                        .build());
+
+        assertThat(result.getStatementBalance()).isEqualTo("1020.00");
+        assertThat(result.getRemainingStatementBalance()).isEqualTo("520.00");
     }
 
     @Test
@@ -170,13 +245,13 @@ class StatementServiceTest {
                 .cycleId(cycleId.toString())
                 .statementStatus("GENERATED")
                 .availableCredit("4000.00")
+                //.message("Statement generated successfully")
                 .transactions(List.of(txDto))
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
         when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(testBillingCycle));
         when(statementRepository.existsByCycleId(cycleId)).thenReturn(false);
-        when(paymentRepository.findTotalPaidByCycleId(cycleId)).thenReturn(BigDecimal.ZERO);
         when(statementMapper.toEntity(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(testStatement);
         when(statementRepository.save(any(Statement.class))).thenReturn(testStatement);
@@ -247,5 +322,4 @@ class StatementServiceTest {
                 .cycleId(cycleId.toString())
                 .build();
     }
-
 }

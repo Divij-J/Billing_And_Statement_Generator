@@ -1,5 +1,4 @@
 package com.example.billing_and_statement_generator.services;
-
 import com.example.billing_and_statement_generator.dto.statement.GenerateStatementRequestDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
@@ -11,10 +10,10 @@ import com.example.billing_and_statement_generator.mapper.StatementMapper;
 import com.example.billing_and_statement_generator.mapper.TransactionMapper;
 import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
 import com.example.billing_and_statement_generator.repository.CardRepository;
-import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import com.example.billing_and_statement_generator.repository.StatementRepository;
 import com.example.billing_and_statement_generator.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,17 +26,18 @@ import static com.example.billing_and_statement_generator.util.BillingUtils.calc
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StatementService {
 
     private final StatementRepository statementRepository;
     private final CardRepository cardRepository;
     private final BillingCycleRepository billingCycleRepository;
-    private final PaymentRepository paymentRepository;
     private final TransactionRepository transactionRepository;
     private final StatementMapper statementMapper;
     private final TransactionMapper transactionMapper;
 
     // POST /statements/v1/generate
+// Generates statement AND returns full statement details in one response
     public RetrieveStatementResponseDTO generateStatement(GenerateStatementRequestDTO dto) {
 
         // Validate card exists
@@ -58,32 +58,28 @@ public class StatementService {
             throw new RuntimeException("Statement already exists for this billing cycle");
         }
 
-        // Calculate balances
+        // Calculate balances from billing cycle
         BigDecimal totalInterest = billingCycle.getTotalInterest();
         BigDecimal totalOutstanding = billingCycle.getTotalOutstanding();
         BigDecimal minimumDue = billingCycle.getMinimumDue();
-
 
         List<Transaction> cycleTransactions =
                 billingCycle.getTransactions() == null
                         ? List.of()
                         : billingCycle.getTransactions();
 
-        // Use helper method in BillingUtils for calculating cash advance fees
         BigDecimal cashAdvanceFee = calculateCashAdvanceFees(cycleTransactions);
-
-        // Use helper method in BillingUtils for calculating all fees
         BigDecimal totalFeeApplied = calculateTotalFees(cycleTransactions);
-
-        // Payments so far (null-safe)
-        BigDecimal totalPaid = paymentRepository.findTotalPaidByCycleId(UUID.fromString(dto.getCycleId()));
-        if (totalPaid == null) totalPaid = BigDecimal.ZERO;
 
         BigDecimal interest = totalInterest == null ? BigDecimal.ZERO : totalInterest;
         BigDecimal outstanding = totalOutstanding == null ? BigDecimal.ZERO : totalOutstanding;
 
-        // Fetch outstanding balance from the total balance in Billing Cycle
-        BigDecimal statementBalance = billingCycle.getTotalOutstanding();
+        BigDecimal statementBalance = outstanding;
+
+        // Fix: Calculate total paid by comparing billing cycle outstanding
+        // against current card balance (updated in real-time by PaymentService)
+        BigDecimal currentCardTotal = card.getCardBalance().add(card.getCashAdvanceBalance());
+        BigDecimal totalPaid = outstanding.subtract(currentCardTotal).max(BigDecimal.ZERO);
 
         BigDecimal remainingStatementBalance = statementBalance
                 .subtract(totalPaid)
@@ -107,12 +103,23 @@ public class StatementService {
         );
 
         Statement savedStatement = statementRepository.save(statement);
+        log.info(
+                "Statement generated: statementId={}, cardId={}, cycleId={}, totalPaid={}, remainingBalance={}",
+                savedStatement.getStatementId(),
+                card.getCardId(),
+                billingCycle.getCycleId(),
+                totalPaid,
+                remainingStatementBalance
+        );
 
+        // Fetch transactions for this billing cycle
         List<CreateTransactionResponseDTO> transactions =
                 transactionRepository.findByBillingCycleCycleId(UUID.fromString(dto.getCycleId()))
                         .stream()
                         .map(transactionMapper::toResponse)
                         .toList();
+
         return statementMapper.toRetrieveResponseDTO(savedStatement, transactions);
     }
+
 }
