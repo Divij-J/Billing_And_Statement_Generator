@@ -75,7 +75,7 @@ class BillingServiceTest {
         unbilledTransactions = List.of(t1);
     }
 
-// ── generateBillingCycle — success ─────────────────────────────────────
+// generateBillingCycle - success
 
     @Test
     void generateBillingCycle_shouldGenerateSuccessfully() {
@@ -244,7 +244,7 @@ class BillingServiceTest {
         verify(transactionService, atLeastOnce()).createInterest(eq(cardId), any(), any());
     }
 
-// ── generateBillingCycle — Card Not Found ──────────────────────────────
+// generateBillingCycle - Card Not Found
 
     @Test
     void generateBillingCycle_shouldThrowWhenCardNotFound() {
@@ -255,7 +255,7 @@ class BillingServiceTest {
                 () -> billingService.generateBillingCycle(cardId));
     }
 
-// ── getBillingCycle — success ───────────────────────────────────────────
+// getBillingCycle - success
 
     @Test
     void getBillingCycle_shouldReturnCycle() {
@@ -283,7 +283,7 @@ class BillingServiceTest {
         verify(billingCycleRepository).findById(cycleId);
     }
 
-// ── getBillingCycle — Wrong Card ID ────────────────────────────────────
+// getBillingCycle - Wrong Card ID
 
     @Test
     void getBillingCycle_shouldThrowIfCycleNotBelongToCard() {
