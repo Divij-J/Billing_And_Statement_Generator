@@ -1,5 +1,7 @@
 package com.example.billing_and_statement_generator.mapper;
 
+import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
+import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import com.example.billing_and_statement_generator.entity.BillingCycle;
@@ -50,9 +52,21 @@ public class StatementMapper {
                 .build();
     }
 
+    public GenerateStatementResponseDTO toGenerateResponseDTO(Statement statement) {
+        return GenerateStatementResponseDTO.builder()
+                .statementId(statement.getStatementId().toString())
+                .cardId(statement.getCard().getCardId().toString())
+                .cycleId(statement.getBillingCycle().getCycleId().toString())
+                .statementStatus(statement.getStatementStatus().toString())
+                .message("Statement generated successfully")
+                .build();
+    }
+
     public RetrieveStatementResponseDTO toRetrieveResponseDTO(
             Statement statement,
-            List<CreateTransactionResponseDTO> transactions) {
+            List<CreateTransactionResponseDTO> transactions,
+            List<RetrievePaymentHistoryDTO> payments,
+            BigDecimal amountPaid) {
         return RetrieveStatementResponseDTO.builder()
                 .statementId(statement.getStatementId().toString())
                 .cycleId(statement.getBillingCycle().getCycleId().toString())
@@ -69,10 +83,12 @@ public class StatementMapper {
                 .totalFeeApplied(statement.getTotalFeeApplied().toString())
                 .cashAdvanceFee(statement.getCashAdvanceFee().toString())
                 .carryForwardBalance(statement.getCarryForwardBalance().toString())
+                .statementStatus(statement.getStatementStatus().toString())
                 .availableCredit(statement.getCard().getAvailableCredit() != null
                         ? statement.getCard().getAvailableCredit().toString() : "0.00")
-                .statementStatus(statement.getStatementStatus().toString())
+                .amountPaid(amountPaid != null ? amountPaid.toString() : "0.00")
                 .transactions(transactions)
+                .payments(payments)
                 .build();
     }
 }

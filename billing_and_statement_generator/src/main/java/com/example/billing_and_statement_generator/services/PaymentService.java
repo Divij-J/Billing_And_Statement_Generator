@@ -3,9 +3,11 @@ package com.example.billing_and_statement_generator.services;
 import com.example.billing_and_statement_generator.dto.payment.PaymentRequestDTO;
 import com.example.billing_and_statement_generator.dto.payment.PaymentResponseDTO;
 import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
+import com.example.billing_and_statement_generator.entity.BillingCycle;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Payment;
 import com.example.billing_and_statement_generator.mapper.PaymentMapper;
+import com.example.billing_and_statement_generator.repository.BillingCycleRepository;
 import com.example.billing_and_statement_generator.repository.CardRepository;
 import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final CardRepository cardRepository;
+    private final BillingCycleRepository billingCycleRepository;
     private final PaymentMapper paymentMapper;
     private final CardService cardService;
 
@@ -33,7 +36,6 @@ public class PaymentService {
     @Transactional
     public PaymentResponseDTO processPayment(PaymentRequestDTO dto) {
 
-        // Validate card and billing cycle
         UUID cardId = UUID.fromString(dto.getCardId());
 
         Card card = cardRepository.findById(cardId)
@@ -47,13 +49,11 @@ public class PaymentService {
                 ? card.getMinimumDue() : BigDecimal.ZERO;
 
         // Attempt balance update BEFORE saving payment
-        // cardService.applyPayment throws LimitExceededException on overpayment.
-        // We only save the payment if it succeeds — no ghost FAILED records.
+        // cardService.applyPayment throws LimitExceededException on overpayment
         BigDecimal newTotalBalance;
         try {
             newTotalBalance = cardService.applyPayment(cardId, amountPaid);
         } catch (CardService.LimitExceededException e) {
-            // Overpayment rejected - do NOT save a payment record
             log.warn("Payment rejected for cardId={} — overpayment of {}: {}",
                     cardId, amountPaid, e.getMessage());
             throw new RuntimeException("Payment rejected: " + e.getMessage());
@@ -61,24 +61,37 @@ public class PaymentService {
 
         Payment.PaymentType paymentType = determinePaymentType(amountPaid, totalOutstanding, minimumDue);
 
-        // Build and save payment with server-determined type and SUCCESS status
+        // Build payment entity
         Payment payment = paymentMapper.toEntity(dto, card);
         payment.setPaymentType(paymentType);
         payment.setPaymentStatus(Payment.PaymentStatus.SUCCESS);
 
+        // Automatically assign to OPEN billing cycle if one exists for this card
+        Optional<BillingCycle> openCycle = billingCycleRepository
+                .findTopByCardCardIdOrderByCycleEndDateDesc(cardId);
+
+        if (openCycle.isPresent() && "OPEN".equals(openCycle.get().getCycleStatus())) {
+            payment.setBillingCycle(openCycle.get());
+            log.info("Payment assigned to cycleId={}", openCycle.get().getCycleId());
+        } else {
+            log.info("No open billing cycle found for cardId={} — payment saved without cycleId", cardId);
+        }
+
         Payment savedPayment = paymentRepository.save(payment);
-        log.info("Payment saved: paymentId={}, cardId={}, amount={}, type={}, status={}",
+        log.info("Payment saved: paymentId={}, cardId={}, amount={}, type={}, status={}, cycleId={}",
                 savedPayment.getPaymentId(), cardId, amountPaid, paymentType,
-                Payment.PaymentStatus.SUCCESS);
+                Payment.PaymentStatus.SUCCESS,
+                savedPayment.getBillingCycle() != null
+                        ? savedPayment.getBillingCycle().getCycleId() : "null");
 
         return paymentMapper.toResponseDTO(savedPayment);
     }
 
     /**
      * Determines payment type server-side based on amount vs outstanding/minimum.
-     * FULL    - pays off the entire outstanding balance
-     * MINIMUM - pays at or near the minimum due (within $1 tolerance)
-     * PARTIAL - anything else
+     * FULL     - pays off the entire outstanding balance
+     * MINIMUM  - pays at or near the minimum due (within $1 tolerance)
+     * PARTIAL  - anything else
      */
     private Payment.PaymentType determinePaymentType(
             BigDecimal amountPaid,
@@ -88,7 +101,6 @@ public class PaymentService {
         if (amountPaid.compareTo(totalOutstanding) >= 0) {
             return Payment.PaymentType.FULL;
         }
-        // Within $1.00 of minimum due counts as a minimum payment
         if (minimumDue.compareTo(BigDecimal.ZERO) > 0
                 && amountPaid.subtract(minimumDue).abs().compareTo(BigDecimal.ONE) <= 0) {
             return Payment.PaymentType.MINIMUM;
