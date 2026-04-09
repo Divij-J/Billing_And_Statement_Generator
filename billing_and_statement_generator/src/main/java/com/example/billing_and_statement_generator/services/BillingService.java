@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,7 +58,6 @@ public class BillingService {
                     previousCycle.setCycleStatus("CLOSED");
                     billingCycleRepository.save(previousCycle);
                 }
-
                 log.info("Closed previous cycle {}", previousCycle.getCycleId());
             }
 
@@ -69,17 +67,7 @@ public class BillingService {
 
             LocalDate dueDate = BillingUtils.calculateDueDate(cycleEndDate);
 
-            // 3. Fetch unbilled transactions and total balances
-            BigDecimal previousPurchaseBalance = card.getCardBalance(); // carry-over purchase balance
-            BigDecimal previousCashAdvanceBalance = card.getCashAdvanceBalance(); // carry-over cash advance balance
-
-            BigDecimal previousTotalBalance = lastCycleOpt
-                    .map(BillingCycle::getTotalOutstanding)
-                    .orElse(BigDecimal.ZERO);
-
-            log.info("Snapshot balances — purchase: {}, cashAdvance: {}, total: {}",
-                    previousPurchaseBalance, previousCashAdvanceBalance, previousTotalBalance);
-
+            // 3. Fetch unbilled transactions
             List<Transaction> unbilledTxns = transactionRepository
                     .findByCardCardIdAndBillingCycleIsNull(cardId);
 
@@ -95,23 +83,18 @@ public class BillingService {
 
             // 5. Sum purchases and cash advances separately
             BigDecimal totalPurchases = unbilledTxns.stream()
-                    .filter(t -> Transaction.transactionType.PURCHASE
-                            .equals(t.getTransactionType()))
+                    .filter(t -> Transaction.transactionType.PURCHASE.equals(t.getTransactionType()))
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            log.info("Total purchases in cycle: {}", totalPurchases);
 
             BigDecimal totalCashAdvance = unbilledTxns.stream()
-                    .filter(t -> Transaction.transactionType.CASHADVANCE
-                            .equals(t.getTransactionType()))
+                    .filter(t -> Transaction.transactionType.CASHADVANCE.equals(t.getTransactionType()))
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            log.info("Total cash advance in cycle: {}", totalCashAdvance);
 
-            // 6. INTEREST — calculated on previousBalance only (unpaid balances from last cycle)
-            // New purchases/cash advances in THIS cycle haven't been outstanding
-            // long enough to accrue a full cycle of interest
-            // Interest rates come from Card entity set during card creation
+            log.info("Total purchases: {}, Total cash advance: {}", totalPurchases, totalCashAdvance);
+
+            // 6. INTEREST — only charged if there was an UNPAID balance from previous cycle
             BigDecimal annualRate = card.getAnnualInterestRate() != null
                     ? card.getAnnualInterestRate()
                     : new BigDecimal("0.20");
@@ -120,79 +103,87 @@ public class BillingService {
                     ? card.getCashAdvanceAPR()
                     : new BigDecimal("0.24");
 
-            // Calculate interest on previous card balance using standard APR
-            BigDecimal purchaseInterest = BillingUtils.calculateInterest(
-                    previousPurchaseBalance, annualRate, cycleStartDate, cycleEndDate);
+            BigDecimal previousPurchaseBalance = BigDecimal.ZERO;
+            BigDecimal previousCashAdvanceBalance = BigDecimal.ZERO;
 
-            // Calculate interest on previous cash advance balance separately (Cash advances use a higher APR than regular purchases)
-            BigDecimal cashAdvanceInterest = BillingUtils.calculateInterest(
-                    previousCashAdvanceBalance, cashAdvanceAPR,
-                    cycleStartDate, cycleEndDate);
+            if (lastCycleOpt.isPresent()) {
+                BillingCycle lastCycle = lastCycleOpt.get();
+                BigDecimal previousOutstanding = lastCycle.getTotalOutstanding() != null
+                        ? lastCycle.getTotalOutstanding()
+                        : BigDecimal.ZERO;
+
+                if (previousOutstanding.compareTo(BigDecimal.ZERO) > 0) {
+                    previousPurchaseBalance = card.getCardBalance()
+                            .subtract(totalPurchases)
+                            .max(BigDecimal.ZERO);
+                    previousCashAdvanceBalance = card.getCashAdvanceBalance()
+                            .subtract(totalCashAdvance)
+                            .max(BigDecimal.ZERO);
+
+                    log.info(
+                            "Previous unpaid balance detected — interest will be charged. prevPurchase={}, prevCashAdvance={}",
+                            previousPurchaseBalance, previousCashAdvanceBalance);
+                } else {
+                    log.info("Previous cycle fully paid — no interest charged for card {}", cardId);
+                }
+            } else {
+                log.info("First billing cycle for card {} — no interest charged", cardId);
+            }
+
+            BigDecimal purchaseInterest = previousPurchaseBalance.compareTo(BigDecimal.ZERO) > 0
+                    ? BillingUtils.calculateInterest(previousPurchaseBalance, annualRate,
+                    cycleStartDate, cycleEndDate)
+                    : BigDecimal.ZERO;
+
+            BigDecimal cashAdvanceInterest = previousCashAdvanceBalance.compareTo(BigDecimal.ZERO) > 0
+                    ? BillingUtils.calculateInterest(previousCashAdvanceBalance, cashAdvanceAPR,
+                    cycleStartDate, cycleEndDate)
+                    : BigDecimal.ZERO;
 
             BigDecimal totalInterest = purchaseInterest.add(cashAdvanceInterest);
 
-            // Apply interest to card via TransactionService
-            // Interest is NOT stored as a transaction — it's applied directly
-            // to balances via CardService
             if (purchaseInterest.compareTo(BigDecimal.ZERO) > 0) {
-                transactionService.createInterest(
-                        cardId, purchaseInterest,
+                transactionService.createInterest(cardId, purchaseInterest,
                         TransactionService.InterestType.CARDBALANCE);
             }
             if (cashAdvanceInterest.compareTo(BigDecimal.ZERO) > 0) {
-                transactionService.createInterest(
-                        cardId, cashAdvanceInterest,
+                transactionService.createInterest(cardId, cashAdvanceInterest,
                         TransactionService.InterestType.CASHADVANCE);
             }
 
-            // 7. LATE FEE — applied if cycle has an unpaid balance AND past due date
-            // Late fee amount taken from Card entity
+            // 7. LATE FEE
             BigDecimal lateFee = BigDecimal.ZERO;
-            if (lastCycleOpt.isPresent() &&
-                    lastCycleOpt.get().getTotalOutstanding().compareTo(BigDecimal.ZERO) > 0 &&
-                    lastCycleOpt.get().getDueDate().isBefore(LocalDate.now())) {
+            if (lastCycleOpt.isPresent()
+                    && lastCycleOpt.get().getTotalOutstanding().compareTo(BigDecimal.ZERO) > 0
+                    && lastCycleOpt.get().getDueDate().isBefore(LocalDate.now())) {
 
                 lateFee = card.getLateFeeAmount() != null
                         ? card.getLateFeeAmount()
                         : new BigDecimal("50.00");
 
-                // Late fee stored in transactions under FEE type via TransactionService
-                transactionService.createFee(cardId, lateFee, cycleEndDate, Transaction.transactionType.LATEFEE);
+                transactionService.createFee(cardId, lateFee, cycleEndDate,
+                        Transaction.transactionType.LATEFEE);
                 log.info("Late fee {} applied for card {}", lateFee, cardId);
             }
 
-            // 8. CASH ADVANCE FEE — rate taken from Card entity
-            // Already applied per transaction in TransactionService.create()
-            // Sum FEE transactions to get total fees applied this cycle
             BigDecimal cashAdvanceFee = unbilledTxns.stream()
-                    .filter(t -> Transaction.transactionType.CASHADVANCEFEE
-                            .equals(t.getTransactionType()))
+                    .filter(t -> Transaction.transactionType.CASHADVANCEFEE.equals(t.getTransactionType()))
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // 9. ANNUAL MEMBERSHIP FEE — check if anniversary year reached
             BigDecimal annualMembershipFee = checkAndApplyAnnualFee(
                     card, cardId, cycleStartDate, cycleEndDate);
 
-            // Summing up the fees
-            BigDecimal totalFeesApplied = lateFee
-                    .add(cashAdvanceFee)
-                    .add(annualMembershipFee);
+            BigDecimal totalFeesApplied = lateFee.add(cashAdvanceFee).add(annualMembershipFee);
 
-            // 10. Total outstanding
             BigDecimal totalOutstanding = card.getCardBalance()
                     .add(card.getCashAdvanceBalance());
 
-            // 11. Minimum due = max(5% of totalOutstanding, $100) + overdue amount(if any)
-            BigDecimal minimumDue =
-                    BillingUtils.calculateMinimumDue(totalOutstanding);
-
+            BigDecimal minimumDue = BillingUtils.calculateMinimumDue(totalOutstanding);
             cardService.setMinimumDue(cardId, minimumDue);
 
-            // 12. Add due date to card
             cardService.setDueDate(cardId, dueDate);
 
-            // 13. Persist billing cycle
             BillingCycle cycle = BillingCycle.builder()
                     .cycleId(UUID.randomUUID())
                     .card(card)
@@ -200,7 +191,7 @@ public class BillingService {
                     .cycleEndDate(cycleEndDate)
                     .dueDate(dueDate)
                     .creditLimit(card.getCreditLimit())
-                    .previousBalance(previousTotalBalance)
+                    .previousBalance(lastCycleOpt.map(BillingCycle::getTotalOutstanding).orElse(BigDecimal.ZERO))
                     .totalPurchases(totalPurchases)
                     .totalCashAdvance(totalCashAdvance)
                     .totalInterest(totalInterest)
@@ -217,8 +208,7 @@ public class BillingService {
             payments.forEach(p -> p.setBillingCycle(saved));
             paymentRepository.saveAll(payments);
 
-            log.info("/api/billing/generate/{} - cycle {} generated",
-                    cardId, saved.getCycleId());
+            log.info("/api/billing/generate/{} - cycle {} generated", cardId, saved.getCycleId());
 
             List<Transaction> cycleTxns =
                     transactionRepository.findByBillingCycleCycleId(saved.getCycleId());
@@ -226,14 +216,11 @@ public class BillingService {
             return toResponseDTO(saved, cycleTxns, totalFeesApplied);
 
         } catch (EntityNotFoundException e) {
-            log.error("/api/billing/generate/{} - not found: {}",
-                    cardId, e.getMessage());
+            log.error("/api/billing/generate/{} - not found: {}", cardId, e.getMessage());
             throw e;
         } catch (RuntimeException e) {
-            log.error("/api/billing/generate/{} - error: {}",
-                    cardId, e.getMessage());
-            throw new RuntimeException(
-                    "Failed to generate billing cycle: " + e.getMessage());
+            log.error("/api/billing/generate/{} - error: {}", cardId, e.getMessage());
+            throw new RuntimeException("Failed to generate billing cycle: " + e.getMessage());
         }
     }
 
@@ -249,74 +236,62 @@ public class BillingService {
                     "Cycle " + cycleId + " not found for card " + cardId);
         }
 
-//        List<Transaction> txns = cycle.getTransactions() != null
-//                ? cycle.getTransactions() : List.of();
-
         List<Transaction> cycleTxns = cycle.getTransactions() != null
-                ? cycle.getTransactions() : List.of();
+                ? cycle.getTransactions()
+                : List.of();
 
-        // Summing up the fees
         BigDecimal totalFeesApplied = calculateTotalFees(cycleTxns);
 
         return toResponseDTO(cycle, cycleTxns, totalFeesApplied);
     }
 
-    // Checks if annual membership fee should be applied this cycle
-    // Rule: fee is charged once per year on the anniversary of card issue date
-    // e.g. card issued 2024-03-15 → fee charged on 2025-03-15, 2026-03-15 etc.
-    private BigDecimal checkAndApplyAnnualFee(Card card, UUID cardId,
-                                              LocalDate cycleStart,
-                                              LocalDate cycleEnd) {
-        // No fee configured — skip
-        if (card.getAnnualMembershipFee() == null ||
-                card.getAnnualMembershipFee().compareTo(BigDecimal.ZERO) == 0) {
+    private BigDecimal checkAndApplyAnnualFee(
+            Card card, UUID cardId, LocalDate cycleStart, LocalDate cycleEnd) {
+
+        if (card.getAnnualMembershipFee() == null
+                || card.getAnnualMembershipFee().compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-
-        // No issue date — cannot calculate anniversary
         if (card.getCardIssueDate() == null) {
             return BigDecimal.ZERO;
         }
 
         LocalDate issueDate = card.getCardIssueDate();
-
-        // Check if any anniversary date falls within this billing cycle
-        // Anniversary = same month/day as issue date but in a future year
         int startYear = cycleStart.getYear();
         int endYear = cycleEnd.getYear();
 
         for (int year = startYear; year <= endYear; year++) {
-            // Skip the issue year itself — no fee on first year
             if (year == issueDate.getYear()) continue;
-
             try {
                 LocalDate anniversaryDate = issueDate.withYear(year);
-                // Check if anniversary falls within the billing cycle range
-                if (!anniversaryDate.isBefore(cycleStart) &&
-                        !anniversaryDate.isAfter(cycleEnd)) {
+                if (!anniversaryDate.isBefore(cycleStart)
+                        && !anniversaryDate.isAfter(cycleEnd)) {
+
                     BigDecimal fee = card.getAnnualMembershipFee();
-                    // Apply fee via TransactionService — stored under FEE type
-                    transactionService.createFee(cardId, fee, anniversaryDate, Transaction.transactionType.ANNUALMEMBERSHIPFEE);
-                    log.info("Annual membership fee {} applied for card {} on {}",
+                    transactionService.createFee(
+                            cardId, fee, anniversaryDate,
+                            Transaction.transactionType.ANNUALMEMBERSHIPFEE);
+
+                    log.info(
+                            "Annual membership fee {} applied for card {} on {}",
                             fee, cardId, anniversaryDate);
                     return fee;
                 }
             } catch (Exception e) {
-                // Handles Feb 29 on non-leap years gracefully
-                log.warn("Could not calculate anniversary for year {}: {}",
+                log.warn(
+                        "Could not calculate anniversary for year {}: {}",
                         year, e.getMessage());
             }
         }
-
         return BigDecimal.ZERO;
     }
 
-    // Original mapping — combined feesApplied total
-    private BillingCycleResponseDTO toResponseDTO(BillingCycle cycle,
-                                                  List<Transaction> txns,
-                                                  BigDecimal feesApplied) {
-        Card card = cycle.getCard();
+    private BillingCycleResponseDTO toResponseDTO(
+            BillingCycle cycle,
+            List<Transaction> txns,
+            BigDecimal feesApplied) {
 
+        Card card = cycle.getCard();
         return BillingCycleResponseDTO.builder()
                 .cycleId(cycle.getCycleId())
                 .cardId(cycle.getCard().getCardId())
@@ -337,9 +312,9 @@ public class BillingService {
                 .build();
     }
 
-    // Shared transaction list builder
     private List<CreateTransactionResponseDTO> buildTxnDTOs(
             BillingCycle cycle, List<Transaction> txns) {
+
         return txns.stream()
                 .map(t -> CreateTransactionResponseDTO.builder()
                         .transactionId(t.getTransactionId())
@@ -353,4 +328,5 @@ public class BillingService {
                         .build())
                 .collect(Collectors.toList());
     }
+
 }
