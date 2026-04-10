@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table (name = "statements")
+@Table(name = "statements")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PUBLIC, force = true)
@@ -93,7 +93,11 @@ public class Statement {
     @Column(name = "statement_status", nullable = false)
     private StatementStatus statementStatus;
 
-    //STATEMENT STATUS ENUM
+    // Snapshot of the full statement response at generation time
+    @Column(name = "statement_snapshot", columnDefinition = "TEXT")
+    private String statementSnapshot;
+
+    // STATEMENT STATUS ENUM
     public enum StatementStatus {
         GENERATED,
         PAID,

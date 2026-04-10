@@ -18,6 +18,7 @@ import com.example.billing_and_statement_generator.repository.CardRepository;
 import com.example.billing_and_statement_generator.repository.PaymentRepository;
 import com.example.billing_and_statement_generator.repository.StatementRepository;
 import com.example.billing_and_statement_generator.repository.TransactionRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class StatementService {
     private final StatementMapper statementMapper;
     private final TransactionMapper transactionMapper;
     private final PaymentMapper paymentMapper;
+    private final ObjectMapper objectMapper;
 
     // POST /statements/v1/generate
     public GenerateStatementResponseDTO generateStatement(GenerateStatementRequestDTO dto) {
@@ -83,7 +85,7 @@ public class StatementService {
 
         BigDecimal statementBalance = outstanding;
 
-        // Calculate total paid by comparing billing cycle outstanding vs current card balance
+        // Calculate total paid
         BigDecimal currentCardTotal = card.getCardBalance().add(card.getCashAdvanceBalance());
         BigDecimal totalPaid = outstanding.subtract(currentCardTotal).max(BigDecimal.ZERO);
 
@@ -94,19 +96,42 @@ public class StatementService {
 
         BigDecimal carryForwardBalance = remainingStatementBalance;
 
-        // Create and save statement
+        // Build statement entity
         Statement statement = statementMapper.toEntity(
-                card,
-                billingCycle,
-                statementBalance,
-                remainingStatementBalance,
+                card, billingCycle, statementBalance, remainingStatementBalance,
                 minimumDue == null ? BigDecimal.ZERO : minimumDue,
-                interest,
-                outstanding,
-                totalFeeApplied,
-                cashAdvanceFee,
-                carryForwardBalance
+                interest, outstanding, totalFeeApplied, cashAdvanceFee, carryForwardBalance
         );
+
+        // Fetch transactions and payments at time of generation — snapshot
+        List<CreateTransactionResponseDTO> transactions =
+                transactionRepository.findByBillingCycleCycleId(UUID.fromString(dto.getCycleId()))
+                        .stream()
+                        .map(transactionMapper::toResponse)
+                        .toList();
+
+        List<Payment> paymentEntities =
+                paymentRepository.findByCycleId(UUID.fromString(dto.getCycleId()));
+
+        List<RetrievePaymentHistoryDTO> payments = paymentEntities.stream()
+                .map(paymentMapper::toHistoryDTO)
+                .toList();
+
+        BigDecimal amountPaid = paymentEntities.stream()
+                .map(Payment::getAmountPaid)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Build retrieve snapshot
+        RetrieveStatementResponseDTO snapshot =
+                statementMapper.toRetrieveResponseDTO(statement, transactions, payments, amountPaid);
+
+        // Serialize snapshot
+        try {
+            String snapshotJson = objectMapper.writeValueAsString(snapshot);
+            statement.setStatementSnapshot(snapshotJson);
+        } catch (Exception e) {
+            log.warn("Failed to serialize statement snapshot: {}", e.getMessage());
+        }
 
         Statement savedStatement = statementRepository.save(statement);
         log.info("Statement generated: statementId={}, cardId={}, cycleId={}",
@@ -118,34 +143,21 @@ public class StatementService {
     // POST /statements/v1/get
     public RetrieveStatementResponseDTO getStatement(UUID statementId) {
 
-        // Find statement by statementId
         Statement statement = statementRepository.findById(statementId)
                 .orElseThrow(() -> new RuntimeException("Statement not found: " + statementId));
 
-        UUID cycleId = statement.getBillingCycle().getCycleId();
+        // Return frozen snapshot
+        if (statement.getStatementSnapshot() != null) {
+            try {
+                return objectMapper.readValue(
+                        statement.getStatementSnapshot(),
+                        RetrieveStatementResponseDTO.class);
+            } catch (Exception e) {
+                log.warn("Failed to deserialize statement snapshot for statementId={}: {}",
+                        statementId, e.getMessage());
+            }
+        }
 
-        // Fetch transactions for this billing cycle
-        List<CreateTransactionResponseDTO> transactions =
-                transactionRepository.findByBillingCycleCycleId(cycleId)
-                        .stream()
-                        .map(transactionMapper::toResponse)
-                        .toList();
-
-        // Fetch payments for this billing cycle
-        List<Payment> paymentEntities = paymentRepository.findByCycleId(cycleId);
-        List<RetrievePaymentHistoryDTO> payments = paymentEntities
-                .stream()
-                .map(paymentMapper::toHistoryDTO)
-                .toList();
-
-        // Calculate total amount paid
-        BigDecimal amountPaid = paymentEntities.stream()
-                .map(Payment::getAmountPaid)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        log.info("Statement retrieved: statementId={}, amountPaid={}", statementId, amountPaid);
-
-        return statementMapper.toRetrieveResponseDTO(statement, transactions, payments, amountPaid);
+        throw new RuntimeException("Statement snapshot not found for statementId: " + statementId);
     }
-
 }
