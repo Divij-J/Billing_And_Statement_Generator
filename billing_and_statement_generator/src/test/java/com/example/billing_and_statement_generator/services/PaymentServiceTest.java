@@ -89,7 +89,7 @@ class PaymentServiceTest {
                 .build();
     }
 
-// ── processPayment() tests ─────────────────────────────────────────────
+    // processPayment() tests
 
     @Test
     void givenValidPayment_withOpenCycle_whenProcessPaymentCalled_thenAssignsCycleId() {
@@ -231,7 +231,7 @@ class PaymentServiceTest {
         verify(paymentRepository, never()).save(any());
     }
 
-// ── getPaymentHistory() tests ──────────────────────────────────────────
+    // getPaymentHistory() tests
 
     @Test
     void givenValidCardId_whenGetPaymentHistoryCalled_thenReturnsPayments() {

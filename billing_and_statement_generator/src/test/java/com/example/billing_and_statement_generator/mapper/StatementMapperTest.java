@@ -50,7 +50,7 @@ class StatementMapperTest {
                 .build();
     }
 
-// ── toEntity() tests ────────────────────────────────────────────────────
+    // toEntity() tests
 
     @Test
     void givenValidInputs_whenToEntityCalled_thenReturnsStatementEntity() {
@@ -85,7 +85,7 @@ class StatementMapperTest {
         assertThat(result.getStatementStatus()).isEqualTo(Statement.StatementStatus.GENERATED);
     }
 
-// ── toGenerateResponseDTO() tests ───────────────────────────────────────
+    // toGenerateResponseDTO() tests
 
     @Test
     void givenStatement_whenToGenerateResponseDTOCalled_thenReturnsCorrectDTO() {
@@ -101,7 +101,7 @@ class StatementMapperTest {
         assertThat(result.getMessage()).isEqualTo("Statement generated successfully");
     }
 
-// ── toRetrieveResponseDTO() tests ───────────────────────────────────────
+    // toRetrieveResponseDTO() tests
 
     @Test
     void givenStatementWithTransactionsAndPayments_whenToRetrieveResponseDTOCalled_thenReturnsCorrectDTO() {
@@ -250,5 +250,4 @@ class StatementMapperTest {
                 .statementStatus(status)
                 .build();
     }
-
 }

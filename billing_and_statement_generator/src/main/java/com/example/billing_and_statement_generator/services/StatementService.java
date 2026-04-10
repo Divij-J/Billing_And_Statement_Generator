@@ -103,7 +103,7 @@ public class StatementService {
                 interest, outstanding, totalFeeApplied, cashAdvanceFee, carryForwardBalance
         );
 
-        // Fetch transactions and payments at time of generation — snapshot
+        // Fetch transactions and payments at time of generation - snapshot
         List<CreateTransactionResponseDTO> transactions =
                 transactionRepository.findByBillingCycleCycleId(UUID.fromString(dto.getCycleId()))
                         .stream()

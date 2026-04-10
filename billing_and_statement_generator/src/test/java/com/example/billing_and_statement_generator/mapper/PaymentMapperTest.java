@@ -58,7 +58,7 @@ class PaymentMapperTest {
         assertThat(result.getCard()).isEqualTo(testCard);
 //        assertThat(result.getBillingCycle()).isEqualTo(testBillingCycle);
         assertThat(result.getAmountPaid()).isEqualByComparingTo(new BigDecimal("500.00"));
-        // paymentType is NOT set by mapper — service sets it
+        // paymentType is NOT set by mapper, service sets it
         assertThat(result.getPaymentType()).isNull();
         assertThat(result.getPaymentStatus()).isEqualTo(Payment.PaymentStatus.PENDING);
         assertThat(result.getPaymentDate()).isNotNull();

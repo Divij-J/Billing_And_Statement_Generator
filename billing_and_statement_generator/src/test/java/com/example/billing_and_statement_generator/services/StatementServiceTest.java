@@ -114,7 +114,7 @@ class StatementServiceTest {
                 .build();
     }
 
-// ── generateStatement() tests ───────────────────────────────────────────
+    // generateStatement() tests
 
     @Test
     void givenValidRequest_whenGenerateStatementCalled_thenReturnsGenerateResponse() throws Exception {
@@ -205,7 +205,7 @@ class StatementServiceTest {
         verify(statementRepository, never()).save(any());
     }
 
-// ── getStatement() tests ────────────────────────────────────────────────
+    // getStatement() tests
 
     @Test
     void givenValidStatementId_whenGetStatementCalled_thenReturnsSnapshot() throws Exception {

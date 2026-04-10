@@ -83,7 +83,7 @@ class StatementControllerTest {
                 .build();
     }
 
-// ── generateStatement() tests ───────────────────────────────────────────
+    // generateStatement() tests
 
     @Test
     void givenValidRequest_whenGenerateStatementCalled_thenReturns201() {
@@ -116,7 +116,7 @@ class StatementControllerTest {
         verify(statementService, times(1)).generateStatement(any(GenerateStatementRequestDTO.class));
     }
 
-// ── getStatement() tests ────────────────────────────────────────────────
+    // getStatement() tests
 
     @Test
     void givenValidStatementId_whenGetStatementCalled_thenReturns200() {
@@ -160,5 +160,4 @@ class StatementControllerTest {
 
         verify(statementService, times(1)).getStatement(statementId);
     }
-
 }
