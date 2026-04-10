@@ -1,5 +1,6 @@
 package com.example.billing_and_statement_generator.dto.statement;
 
+import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,8 +30,13 @@ public class RetrieveStatementResponseDTO {
     private String totalFeeApplied;
     private String cashAdvanceFee;
     private String carryForwardBalance;
+    private String amountPaid;
+    private String availableCredit;
     private String statementStatus;
 
     // Transaction list for the billing cycle
     private List<CreateTransactionResponseDTO> transactions;
+
+    // Payment list for the billing cycle
+    private List<RetrievePaymentHistoryDTO> payments;
 }

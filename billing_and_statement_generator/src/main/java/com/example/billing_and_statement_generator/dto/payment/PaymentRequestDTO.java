@@ -13,9 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PaymentRequestDTO {
 
-    @NotBlank(message = "Cycle ID is required")
-    private String cycleId;
-
     @NotBlank(message = "Card ID is required")
     private String cardId;
 
@@ -26,8 +23,7 @@ public class PaymentRequestDTO {
     )
     private String amountPaid;
 
-    // paymentType is now server-determined (FULL / PARTIAL / MINIMUM)
-    // based on amount vs billing cycle outstanding
+    // paymentType is now server-determined (FULL / PARTIAL / MINIMUM) based on amount vs billing cycle outstanding
 
     @NotBlank(message = "Payment method is required")
     private String paymentMethod; // BANK_TRANSFER, CHECK, ONLINE

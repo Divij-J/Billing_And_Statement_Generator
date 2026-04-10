@@ -68,7 +68,7 @@ public class TransactionService {
                 case CASHADVANCE -> {
                     BigDecimal newBalance = cardService.applyCashAdvance(cardId, amount);
                     BigDecimal fee = amount.multiply(card.getCashAdvanceFeeRate()).setScale(2, java.math.RoundingMode.HALF_UP);
-                    createFee(cardId, fee, dto.getTransactionDate());
+                    createFee(cardId, fee, dto.getTransactionDate(), Transaction.transactionType.CASHADVANCEFEE);
                     log.debug("Transaction CASHADVANCE applied: cardId={}, amount={}, fee={}, newCashAdvanceBalance={}", cardId, amount, fee, newBalance);
                 }
                 default -> throw new ValidationException("Unsupported transaction type: " + dto.getTransactionType());
@@ -107,7 +107,7 @@ public class TransactionService {
         if(amount == null){
             throw new ValidationException("Interest Amount is required");
         }
-        if(amount.signum() < 0){
+        if(amount.signum() <= 0){
             throw new ValidationException("Interest Amount must be > 0");
         }
 
@@ -135,7 +135,7 @@ public class TransactionService {
      * DECLINED interest transactions will NOT be saved if failed
      */
     @Transactional
-    public void createFee(UUID cardId, BigDecimal amount, LocalDate date){
+    public void createFee(UUID cardId, BigDecimal amount, LocalDate date, Transaction.transactionType feeType){
         if(amount == null){
             throw new ValidationException("Fee Amount is required");
         }
@@ -151,8 +151,8 @@ public class TransactionService {
         tx.setCard(card);
         tx.setAmount(amount);
         tx.setTransactionDate(date);
-        tx.setMerchantName("FEE");
-        tx.setTransactionType(Transaction.transactionType.FEE);
+        tx.setMerchantName(feeType.toString());
+        tx.setTransactionType(feeType);
         tx.setStatus(Transaction.Status.PENDING);
 
         BigDecimal newBalance = cardService.applyFee(cardId, amount);

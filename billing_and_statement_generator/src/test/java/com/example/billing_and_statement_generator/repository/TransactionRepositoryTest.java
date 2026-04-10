@@ -61,6 +61,7 @@ class TransactionRepositoryTest {
                 .active(true)
                 .cardBalance(BigDecimal.ZERO)
                 .cashAdvanceBalance(BigDecimal.ZERO)
+                .availableCredit(BigDecimal.valueOf(5000))
                 .creditLimit(BigDecimal.valueOf(5000))
                 .securityCode("123")
                 .build();

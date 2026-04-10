@@ -17,4 +17,5 @@ public class GetCardBalanceResponseDTO {
     BigDecimal cardBalance;
     BigDecimal cashAdvanceBalance;
     BigDecimal totalBalance;
+    BigDecimal availableCredit;
 }

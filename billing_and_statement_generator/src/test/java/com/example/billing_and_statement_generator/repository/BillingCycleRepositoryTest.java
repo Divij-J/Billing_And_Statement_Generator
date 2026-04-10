@@ -65,6 +65,7 @@ class BillingCycleRepositoryTest {
         card.setCreditLimit(new BigDecimal("5000"));
         card.setCardBalance(BigDecimal.ZERO);
         card.setCashAdvanceBalance(BigDecimal.ZERO);
+        card.setAvailableCredit(BigDecimal.valueOf(5000));
         card.setAnnualInterestRate(new BigDecimal("0.20"));
         card.setCashAdvanceAPR(new BigDecimal("0.24"));
         card.setLateFeeAmount(new BigDecimal("25"));

@@ -67,6 +67,7 @@ public class CardService {
         // Set credit limits (default values, can be changed later)
         card.setCreditLimit(BigDecimal.valueOf(10000));
         card.setCashAdvanceLimit(BigDecimal.valueOf(2500));
+        card.setAvailableCredit(BigDecimal.valueOf(10000));
 
         Card saved = cardRepository.save(card);
 
@@ -115,6 +116,8 @@ public class CardService {
         }
 
         card.setCardBalance(newBalance);
+        adjustAvailableCredit(card);
+
         cardRepository.save(card);
         log.debug("Purchase posted: cardId={}, amount={}, prevBalance={}, newBalance={}", cardId, amount, prevBalance, newBalance);
         return newBalance;
@@ -154,6 +157,7 @@ public class CardService {
         }
 
         card.setCashAdvanceBalance(newCashAdvanceBalance);
+        adjustAvailableCredit(card);
 
         cardRepository.save(card);
         log.debug("Cash advance posted: cardId={}, amount={}, prevCashAdvanceBalance={}, newCashAdvanceBalance={}", cardId, amount, prevCashAdvanceBalance, newCashAdvanceBalance);
@@ -198,6 +202,7 @@ public class CardService {
 
         card.setCardBalance(newCardBalance);
         card.setCashAdvanceBalance(newCashAdvanceBalance);
+        adjustAvailableCredit(card);
         cardRepository.save(card);
 
         log.debug("CardService: Payment posted: cardId={}, amount={}, prevCardBalance={}, newCardBalance={}, prevCashAdvanceBalance={}, newCashAdvanceBalance={}", cardId, amount, prevCardBalance, newCardBalance, prevCashAdvanceBalance, newCashAdvanceBalance);
@@ -231,6 +236,7 @@ public class CardService {
             throw new ValidationException("Invalid Interest Type");
         }
 
+        adjustAvailableCredit(card);
         cardRepository.save(card);
 
         log.debug("CardService: Interest applied: cardId={}, amount={}, prevBalance={}, newBalance={}, interestType={}", cardId, amount, prevBalance, newBalance, type);
@@ -259,6 +265,7 @@ public class CardService {
         }
 
         card.setCardBalance(newBalance);
+        adjustAvailableCredit(card);
         cardRepository.save(card);
         log.debug("CardService: Fee applied: cardId={}, amount={}, prevBalance={}, newBalance={}", cardId, amount, prevBalance, newBalance);
         return newBalance;
@@ -272,6 +279,23 @@ public class CardService {
         log.debug("CardService: Minimum due adjusted to {}", amount);
     }
 
+    // Adjust card's due date (calculated from Billing Cycle)
+    @Transactional
+    public void setDueDate(UUID cardId, LocalDate date){
+        Card card = loadCard(cardId);
+        card.setBillingCycleDate(date);
+        log.debug("CardService: Billing Date adjusted to {}", date);
+    }
+
+    // Adjusts cards available credit
+    public void adjustAvailableCredit(Card card){
+        BigDecimal cardBalance = card.getCardBalance();
+        BigDecimal cashAdvanceBalance = card.getCashAdvanceBalance();
+        BigDecimal creditLimit = card.getCreditLimit();
+
+        card.setAvailableCredit(creditLimit.subtract(cardBalance).subtract(cashAdvanceBalance));
+    }
+
     // Reads this card's balance
     @Transactional(readOnly = true)
     public GetCardBalanceResponseDTO getBalances(UUID cardId) {
@@ -281,6 +305,7 @@ public class CardService {
         dto.setCardId(cardId);
         dto.setCardBalance(card.getCardBalance());
         dto.setCashAdvanceBalance(card.getCashAdvanceBalance());
+        dto.setAvailableCredit(card.getAvailableCredit());
 
         BigDecimal total = card.getCardBalance().add(card.getCashAdvanceBalance());
         dto.setTotalBalance(total);

@@ -45,20 +45,20 @@ class PaymentMapperTest {
     @Test
     void givenValidPaymentRequestDTO_whenToEntityCalled_thenReturnsPaymentEntity() {
         PaymentRequestDTO dto = PaymentRequestDTO.builder()
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("500.00")
                 .paymentMethod("ONLINE")
                 .build();
 
-        Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
+        Payment result = paymentMapper.toEntity(dto, testCard);
 
         assertThat(result).isNotNull();
         assertThat(result.getPaymentId()).isNotNull();
         assertThat(result.getCard()).isEqualTo(testCard);
-        assertThat(result.getBillingCycle()).isEqualTo(testBillingCycle);
+//        assertThat(result.getBillingCycle()).isEqualTo(testBillingCycle);
         assertThat(result.getAmountPaid()).isEqualByComparingTo(new BigDecimal("500.00"));
-        // paymentType is NOT set by mapper — service sets it
+        // paymentType is NOT set by mapper, service sets it
         assertThat(result.getPaymentType()).isNull();
         assertThat(result.getPaymentStatus()).isEqualTo(Payment.PaymentStatus.PENDING);
         assertThat(result.getPaymentDate()).isNotNull();
@@ -68,13 +68,13 @@ class PaymentMapperTest {
     @Test
     void givenCheckPaymentMethod_whenToEntityCalled_thenReturnsCorrectPaymentMethod() {
         PaymentRequestDTO dto = PaymentRequestDTO.builder()
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("100.00")
                 .paymentMethod("CHECK")
                 .build();
 
-        Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
+        Payment result = paymentMapper.toEntity(dto, testCard);
 
         assertThat(result.getPaymentMethod()).isEqualTo(Payment.PaymentMethod.CHECK);
     }
@@ -82,13 +82,13 @@ class PaymentMapperTest {
     @Test
     void givenBankTransferPaymentMethod_whenToEntityCalled_thenReturnsCorrectPaymentMethod() {
         PaymentRequestDTO dto = PaymentRequestDTO.builder()
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("750.00")
                 .paymentMethod("BANK_TRANSFER")
                 .build();
 
-        Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
+        Payment result = paymentMapper.toEntity(dto, testCard);
 
         assertThat(result.getPaymentMethod()).isEqualTo(Payment.PaymentMethod.BANK_TRANSFER);
     }
@@ -96,26 +96,26 @@ class PaymentMapperTest {
     @Test
     void givenInvalidPaymentMethod_whenToEntityCalled_thenThrowsException() {
         PaymentRequestDTO dto = PaymentRequestDTO.builder()
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("200.00")
                 .paymentMethod("CRYPTO")
                 .build();
 
         assertThrows(RuntimeException.class,
-                () -> paymentMapper.toEntity(dto, testCard, testBillingCycle));
+                () -> paymentMapper.toEntity(dto, testCard));
     }
 
     @Test
     void givenNullPaymentMethod_whenToEntityCalled_thenPaymentMethodIsNull() {
         PaymentRequestDTO dto = PaymentRequestDTO.builder()
-                .cycleId(testBillingCycle.getCycleId().toString())
+//                .cycleId(testBillingCycle.getCycleId().toString())
                 .cardId(testCard.getCardId().toString())
                 .amountPaid("200.00")
                 .paymentMethod(null)
                 .build();
 
-        Payment result = paymentMapper.toEntity(dto, testCard, testBillingCycle);
+        Payment result = paymentMapper.toEntity(dto, testCard);
 
         assertThat(result.getPaymentMethod()).isNull();
     }

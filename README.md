@@ -1,8 +1,4 @@
 # Credit Card Billing & Statement Generator
-<a href="https://capgemini-my.sharepoint.com/:p:/r/personal/stephen_harayo_capgemini_com/Documents/Credit%20Card%20Billing%20and%20Statement%20Generator.pptx?d=wfb546ca9dff24842be65bd21979a3b85&csf=1&web=1&e=78Mxjo" target="_blank">
-  <img src="https://img.shields.io/badge/View%20Slides-Click%20Here-blue?style=for-the-badge" />
-</a>
-
 A Spring Boot application designed to simulate the full lifecycle of a credit card billing system from card issuance and transaction tracking through billing cycle generation, payment processing, and statement creation. This project demonstrates the implementation of financial domain modelling, standard security protocols, strict data validation, and scalable architectural patterns.
 
 ## Use Case
@@ -52,3 +48,12 @@ The **Credit Card Billing & Statement Generator** serves as a centralized backen
 
 ## Database Model
 ![ER](https://github.com/user-attachments/assets/9c82d716-2c0f-4fc2-8e0a-5646ae7bbb50)
+
+## Future Enhancements
+* **Microservice Migration**: Refactor the current monolithic Spring Boot application into independent microservices, one per domain (Customer Service, Card Service, Transaction Service, Billing Service, Payment Service, Statement Service), communicating via REST or messaging queues (e.g. Kafka/RabbitMQ).
+* **BDD & Contract Testing**: Implement Behavior-Driven Development test scenarios using Gherkin (Given-When-Then) and the Cucumber framework for all API endpoints. Expand PACT contract testing coverage to include all service interactions.
+* **Rewards Points System**: Implement an optional rewards points engine where cardholders earn points on purchases. Points would be tracked per transaction, accumulated on the billing cycle, and redeemable against the statement balance.
+* **PDF Statement Download**: Add a dedicated endpoint POST /statements/v1/download that generates and returns the billing statement as a downloadable PDF file using iText7, providing clients with a print-ready document.
+* **Customer Spending Analytics**: Build an analytics module that provides cardholders with spending breakdowns by merchant, category, and time period. Include monthly spend summaries and trend comparisons across billing cycles.
+* **Interest & Revenue Reports**: Generate admin-level reports showing total interest collected, fee revenue, cash advance volume, and late fee income across all cards and billing cycles. Support date range filtering and export to JSON.
+* **Billing Cycle Automated**: ​Automate billing cycle closure to trigger interest calculation, fee application, and statement generation using scheduled jobs.

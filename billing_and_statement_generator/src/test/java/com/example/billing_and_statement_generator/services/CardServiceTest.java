@@ -2,6 +2,7 @@ package com.example.billing_and_statement_generator.services;
 
 import com.example.billing_and_statement_generator.dto.card.CreateCardRequestDTO;
 import com.example.billing_and_statement_generator.dto.card.CreateCardResponseDTO;
+import com.example.billing_and_statement_generator.dto.card.GetCardBalanceResponseDTO;
 import com.example.billing_and_statement_generator.entity.Card;
 import com.example.billing_and_statement_generator.entity.Customer;
 import com.example.billing_and_statement_generator.mapper.CardMapper;
@@ -170,6 +171,7 @@ class CardServiceTest {
                 .cardId(cardId)
                 .cardBalance(BigDecimal.valueOf(300))
                 .cashAdvanceBalance(BigDecimal.valueOf(100))
+                .creditLimit(BigDecimal.valueOf(10000))
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
@@ -187,6 +189,7 @@ class CardServiceTest {
                 .cardId(cardId)
                 .cardBalance(BigDecimal.valueOf(200))
                 .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(10000))
                 .build();
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
@@ -194,6 +197,7 @@ class CardServiceTest {
         BigDecimal newBal = cardService.applyInterest(cardId, BigDecimal.valueOf(20), TransactionService.InterestType.CARDBALANCE);
 
         assertEquals(BigDecimal.valueOf(220), newBal, "Expected card balance after applying interest to match calculation");
+        assertEquals(BigDecimal.valueOf(220), card.getCardBalance(), "Card balance applying interest doesn't match");
     }
 
     @Test
@@ -227,6 +231,196 @@ class CardServiceTest {
         assertThrows(CardService.ValidationException.class,
                 () -> cardService.applyPurchase(cardId, BigDecimal.valueOf(50)),
                 "Expected ValidationException for inactive card");
+
+        verify(cardRepository, never()).save(any());
+    }
+
+    @Test
+    void testApplyCashAdvanceSuccess(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(true)
+                .cardBalance(BigDecimal.ZERO)
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(5000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(1000))
+                .availableCredit(BigDecimal.valueOf(5000))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        BigDecimal newBalance = cardService.applyCashAdvance(cardId, BigDecimal.valueOf(500));
+
+        assertEquals(BigDecimal.valueOf(500), newBalance, "Applying cash advance returned incorrect amount");
+        assertEquals(BigDecimal.valueOf(500), card.getCashAdvanceBalance(), "Incorrect Cash Advance Balance");
+        assertEquals(BigDecimal.valueOf(4500), card.getAvailableCredit(), "Incorrect Cash Advance Balance");
+
+        verify(cardRepository).save(card);
+    }
+
+    @Test
+    void testApplyCashAdvanceInactiveCard(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(false)
+                .cardBalance(BigDecimal.ZERO)
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(5000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(1000))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        assertThrows(CardService.ValidationException.class,
+                () -> cardService.applyCashAdvance(cardId, BigDecimal.valueOf(500)),
+                "Expected Cash Advance fail when card is inactive");
+
+        verify(cardRepository, never()).save(any());
+    }
+
+    @Test
+    void testApplyCashAdvanceExceedsLimit(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(true)
+                .cardBalance(BigDecimal.ZERO)
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(5000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(1000))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        assertThrows(CardService.LimitExceededException.class,
+                () -> cardService.applyCashAdvance(cardId, BigDecimal.valueOf(2500)),
+                "Expected Cash Advance Fee fail when Cash Advance Limit is exceeded");
+
+        verify(cardRepository, never()).save(any());
+    }
+    @Test
+    void testApplyFeeSuccess(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(true)
+                .cardBalance(BigDecimal.ZERO)
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(5000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(1000))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        BigDecimal newBalance = cardService.applyFee(cardId, BigDecimal.valueOf(500));
+
+        assertEquals(BigDecimal.valueOf(500), newBalance, "Applying cash fee returned incorrect amount");
+        assertEquals(BigDecimal.valueOf(500), card.getCardBalance(), "Incorrect Cash Advance Balance");
+
+        verify(cardRepository).save(card);
+    }
+
+    @Test
+    void testApplyFeeInactiveCard(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(false)
+                .cardBalance(BigDecimal.ZERO)
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(5000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(1000))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        assertThrows(CardService.ValidationException.class,
+                () -> cardService.applyFee(cardId, BigDecimal.valueOf(500)),
+                "Expected Card fee to fail when card is inactive");
+
+        verify(cardRepository, never()).save(any());
+    }
+
+    @Test
+    void testApplyFeeExceedsLimit(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(true)
+                .cardBalance(BigDecimal.ZERO)
+                .cashAdvanceBalance(BigDecimal.ZERO)
+                .creditLimit(BigDecimal.valueOf(1000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(500))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        assertThrows(CardService.LimitExceededException.class,
+                () -> cardService.applyFee(cardId, BigDecimal.valueOf(2500)),
+                "Expected Card Fee fail when Cash Advance Limit is exceeded");
+
+        verify(cardRepository, never()).save(any());
+    }
+
+    @Test
+    void testGetBalances(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(true)
+                .cardBalance(BigDecimal.valueOf(500))
+                .cashAdvanceBalance(BigDecimal.valueOf(250))
+                .creditLimit(BigDecimal.valueOf(1000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(500))
+                .availableCredit(BigDecimal.valueOf(250))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        GetCardBalanceResponseDTO dto = cardService.getBalances(cardId);
+
+        assertEquals(dto.getCardBalance(), BigDecimal.valueOf(500), "Returned Card Purchase Balance is not 500");
+        assertEquals(dto.getCashAdvanceBalance(), BigDecimal.valueOf(250), "Returned Card Cash Advance Balance is not 250");
+        assertEquals(dto.getAvailableCredit(), BigDecimal.valueOf(250), "Returned Card Available Credit is not 250");
+        assertEquals(dto.getTotalBalance(), BigDecimal.valueOf(750), "Returned Card Total Balance is not 750");
+
+        verify(cardRepository).findById(cardId);
+        verify(cardRepository, never()).save(any());
+    }
+
+    @Test
+    void testAdjustAvailableCredit(){
+        UUID cardId = UUID.randomUUID();
+
+        Card card = Card.builder()
+                .cardId(cardId)
+                .active(true)
+                .cardBalance(BigDecimal.valueOf(50))
+                .cashAdvanceBalance(BigDecimal.valueOf(50))
+                .availableCredit(BigDecimal.valueOf(1000000000))
+                .creditLimit(BigDecimal.valueOf(1000))
+                .cashAdvanceFeeRate(BigDecimal.valueOf(0.02))
+                .cashAdvanceLimit(BigDecimal.valueOf(500))
+                .build();
+
+        cardService.adjustAvailableCredit(card);
+        assertEquals(BigDecimal.valueOf(900), card.getAvailableCredit(), "Adjusted Available Credit does not match expected value");
     }
 }
 

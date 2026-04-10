@@ -47,7 +47,7 @@ class PaymentControllerTest {
         // paymentType removed from DTO — server determines it
         paymentRequestDTO = PaymentRequestDTO.builder()
                 .cardId(cardId.toString())
-                .cycleId(cycleId.toString())
+//                .cycleId(cycleId.toString())
                 .amountPaid("500.00")
                 .paymentMethod("ONLINE")
                 .build();

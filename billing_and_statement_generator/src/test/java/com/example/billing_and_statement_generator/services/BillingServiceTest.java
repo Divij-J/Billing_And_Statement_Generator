@@ -23,21 +23,11 @@ import static org.mockito.Mockito.*;
 
 class BillingServiceTest {
 
-    @Mock
-    private CardRepository cardRepository;
-
-    @Mock
-    private BillingCycleRepository billingCycleRepository;
-
-    @Mock
-    private TransactionRepository transactionRepository;
-
-    @Mock
-    private TransactionService transactionService;
-
-    @Mock
-    private CardService cardService;
-
+    @Mock private CardRepository cardRepository;
+    @Mock private BillingCycleRepository billingCycleRepository;
+    @Mock private TransactionRepository transactionRepository;
+    @Mock private TransactionService transactionService;
+    @Mock private CardService cardService;
     @Mock private PaymentRepository paymentRepository;
 
     @InjectMocks
@@ -56,9 +46,11 @@ class BillingServiceTest {
         card.setCreditLimit(new BigDecimal("5000"));
         card.setAnnualInterestRate(new BigDecimal("0.20"));
         card.setCashAdvanceAPR(new BigDecimal("0.24"));
+        card.setCardBalance(BigDecimal.ZERO);
         card.setCashAdvanceBalance(BigDecimal.ZERO);
+        card.setAvailableCredit(new BigDecimal("5000"));
         card.setLateFeeAmount(new BigDecimal("25.00"));
-        card.setAnnualMembershipFee(new BigDecimal("75.00"));
+        card.setAnnualMembershipFee(BigDecimal.ZERO); // no membership fee by default
         card.setCardIssueDate(LocalDate.now().minusYears(2));
 
         lastCycle = BillingCycle.builder()
@@ -75,14 +67,15 @@ class BillingServiceTest {
                 .card(card)
                 .transactionType(Transaction.transactionType.PURCHASE)
                 .amount(new BigDecimal("100.00"))
+                .merchantName("TEST")
+                .transactionDate(LocalDate.now())
+                .status(Transaction.Status.SENT)
                 .build();
 
         unbilledTransactions = List.of(t1);
     }
 
-    // ========================================================================
-    // TEST: generateBillingCycle — success
-    // ========================================================================
+// generateBillingCycle - success
 
     @Test
     void generateBillingCycle_shouldGenerateSuccessfully() {
@@ -93,40 +86,165 @@ class BillingServiceTest {
                 .thenReturn(Optional.of(lastCycle));
         when(transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId))
                 .thenReturn(unbilledTransactions);
-
         when(paymentRepository.findPaymentsWithinCycle(any(), any(), any()))
                 .thenReturn(List.of());
 
-        // Stub billing cycle save
         BillingCycle savedCycle = BillingCycle.builder()
                 .cycleId(UUID.randomUUID())
                 .card(card)
                 .cycleStartDate(LocalDate.now().minusDays(30))
                 .cycleEndDate(LocalDate.now())
-                .dueDate(LocalDate.now().plusDays(25))
+                .dueDate(LocalDate.now().plusDays(21))
+                .totalOutstanding(BigDecimal.ZERO)
+                .minimumDue(BigDecimal.ZERO)
+                .totalPurchases(new BigDecimal("100.00"))
+                .totalCashAdvance(BigDecimal.ZERO)
+                .totalInterest(BigDecimal.ZERO)
+                .previousBalance(new BigDecimal("300"))
                 .cycleStatus("OPEN")
                 .build();
 
-        when(billingCycleRepository.save(any(BillingCycle.class)))
-                .thenReturn(savedCycle);
+        when(billingCycleRepository.save(any(BillingCycle.class))).thenReturn(savedCycle);
+        when(transactionRepository.saveAll(anyList())).thenReturn(unbilledTransactions);
+        when(transactionRepository.findByBillingCycleCycleId(any())).thenReturn(unbilledTransactions);
 
-        // Mock saveAll for transactions
-        when(transactionRepository.saveAll(anyList()))
-                .thenReturn(unbilledTransactions);
-
-        BillingCycleResponseDTO result =
-                billingService.generateBillingCycle(cardId);
+        BillingCycleResponseDTO result = billingService.generateBillingCycle(cardId);
 
         assertNotNull(result);
         assertEquals(savedCycle.getCycleId(), result.getCycleId());
         verify(cardRepository).findById(cardId);
-        verify(transactionService, atLeast(0))
-                .createInterest(eq(cardId), any(), any());
     }
 
-    // ========================================================================
-    // TEST: generateBillingCycle — Card Not Found
-    // ========================================================================
+    @Test
+    void generateBillingCycle_whenNoPreviousCycle_shouldNotChargeInterest() {
+        UUID cardId = card.getCardId();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+        when(billingCycleRepository.findTopByCardCardIdOrderByCycleEndDateDesc(cardId))
+                .thenReturn(Optional.empty()); // no previous cycle
+        when(transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId))
+                .thenReturn(List.of());
+        when(paymentRepository.findPaymentsWithinCycle(any(), any(), any()))
+                .thenReturn(List.of());
+
+        BillingCycle savedCycle = BillingCycle.builder()
+                .cycleId(UUID.randomUUID())
+                .card(card)
+                .cycleStartDate(LocalDate.now().minusDays(30))
+                .cycleEndDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusDays(21))
+                .totalOutstanding(BigDecimal.ZERO)
+                .minimumDue(BigDecimal.ZERO)
+                .totalPurchases(BigDecimal.ZERO)
+                .totalCashAdvance(BigDecimal.ZERO)
+                .totalInterest(BigDecimal.ZERO)
+                .previousBalance(BigDecimal.ZERO)
+                .cycleStatus("OPEN")
+                .build();
+
+        when(billingCycleRepository.save(any(BillingCycle.class))).thenReturn(savedCycle);
+        when(transactionRepository.saveAll(anyList())).thenReturn(List.of());
+        when(transactionRepository.findByBillingCycleCycleId(any())).thenReturn(List.of());
+
+        billingService.generateBillingCycle(cardId);
+
+        verify(transactionService, never()).createInterest(any(), any(), any());
+    }
+
+    @Test
+    void generateBillingCycle_whenPreviousCycleFullyPaid_shouldNotChargeInterest() {
+        UUID cardId = card.getCardId();
+
+        BillingCycle paidCycle = BillingCycle.builder()
+                .cycleId(UUID.randomUUID())
+                .card(card)
+                .cycleStatus("CLOSED")
+                .cycleEndDate(LocalDate.now().minusDays(31))
+                .totalOutstanding(BigDecimal.ZERO)
+                .dueDate(LocalDate.now().minusDays(10))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+        when(billingCycleRepository.findTopByCardCardIdOrderByCycleEndDateDesc(cardId))
+                .thenReturn(Optional.of(paidCycle));
+        when(transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId))
+                .thenReturn(List.of());
+        when(paymentRepository.findPaymentsWithinCycle(any(), any(), any()))
+                .thenReturn(List.of());
+
+        BillingCycle savedCycle = BillingCycle.builder()
+                .cycleId(UUID.randomUUID())
+                .card(card)
+                .cycleStartDate(LocalDate.now().minusDays(30))
+                .cycleEndDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusDays(21))
+                .totalOutstanding(BigDecimal.ZERO)
+                .minimumDue(BigDecimal.ZERO)
+                .totalPurchases(BigDecimal.ZERO)
+                .totalCashAdvance(BigDecimal.ZERO)
+                .totalInterest(BigDecimal.ZERO)
+                .previousBalance(BigDecimal.ZERO)
+                .cycleStatus("OPEN")
+                .build();
+
+        when(billingCycleRepository.save(any(BillingCycle.class))).thenReturn(savedCycle);
+        when(transactionRepository.saveAll(anyList())).thenReturn(List.of());
+        when(transactionRepository.findByBillingCycleCycleId(any())).thenReturn(List.of());
+
+        billingService.generateBillingCycle(cardId);
+
+        verify(transactionService, never()).createInterest(any(), any(), any());
+    }
+
+    @Test
+    void generateBillingCycle_whenPreviousCycleUnpaid_shouldChargeInterest() {
+        UUID cardId = card.getCardId();
+
+        card.setCardBalance(new BigDecimal("300.00"));
+        card.setCashAdvanceBalance(BigDecimal.ZERO);
+
+        BillingCycle unpaidCycle = BillingCycle.builder()
+                .cycleId(UUID.randomUUID())
+                .card(card)
+                .cycleStatus("CLOSED")
+                .cycleEndDate(LocalDate.now().minusDays(31))
+                .totalOutstanding(new BigDecimal("300.00"))
+                .dueDate(LocalDate.now().minusDays(10))
+                .build();
+
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+        when(billingCycleRepository.findTopByCardCardIdOrderByCycleEndDateDesc(cardId))
+                .thenReturn(Optional.of(unpaidCycle));
+        when(transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId))
+                .thenReturn(List.of());
+        when(paymentRepository.findPaymentsWithinCycle(any(), any(), any()))
+                .thenReturn(List.of());
+
+        BillingCycle savedCycle = BillingCycle.builder()
+                .cycleId(UUID.randomUUID())
+                .card(card)
+                .cycleStartDate(LocalDate.now().minusDays(30))
+                .cycleEndDate(LocalDate.now())
+                .dueDate(LocalDate.now().plusDays(21))
+                .totalOutstanding(new BigDecimal("300.00"))
+                .minimumDue(new BigDecimal("100.00"))
+                .totalPurchases(BigDecimal.ZERO)
+                .totalCashAdvance(BigDecimal.ZERO)
+                .totalInterest(new BigDecimal("4.93"))
+                .previousBalance(new BigDecimal("300.00"))
+                .cycleStatus("OPEN")
+                .build();
+
+        when(billingCycleRepository.save(any(BillingCycle.class))).thenReturn(savedCycle);
+        when(transactionRepository.saveAll(anyList())).thenReturn(List.of());
+        when(transactionRepository.findByBillingCycleCycleId(any())).thenReturn(List.of());
+
+        billingService.generateBillingCycle(cardId);
+
+        verify(transactionService, atLeastOnce()).createInterest(eq(cardId), any(), any());
+    }
+
+// generateBillingCycle - Card Not Found
 
     @Test
     void generateBillingCycle_shouldThrowWhenCardNotFound() {
@@ -137,9 +255,7 @@ class BillingServiceTest {
                 () -> billingService.generateBillingCycle(cardId));
     }
 
-    // ========================================================================
-    // TEST: getBillingCycle — Success
-    // ========================================================================
+// getBillingCycle - success
 
     @Test
     void getBillingCycle_shouldReturnCycle() {
@@ -158,33 +274,28 @@ class BillingServiceTest {
                 .totalOutstanding(BigDecimal.ZERO)
                 .build();
 
-        when(billingCycleRepository.findById(cycleId))
-                .thenReturn(Optional.of(cycle));
+        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(cycle));
 
-        BillingCycleResponseDTO response =
-                billingService.getBillingCycle(cardId, cycleId);
+        BillingCycleResponseDTO response = billingService.getBillingCycle(cardId, cycleId);
 
         assertNotNull(response);
         assertEquals(cycleId, response.getCycleId());
         verify(billingCycleRepository).findById(cycleId);
     }
 
-    // ========================================================================
-    // TEST: getBillingCycle — Wrong Card ID
-    // ========================================================================
+// getBillingCycle - Wrong Card ID
 
     @Test
     void getBillingCycle_shouldThrowIfCycleNotBelongToCard() {
-        UUID cardId = UUID.randomUUID(); // not matching card.getCardId()
+        UUID cardId = UUID.randomUUID();
         UUID cycleId = UUID.randomUUID();
 
         BillingCycle wrongCycle = BillingCycle.builder()
                 .cycleId(cycleId)
-                .card(card) // different card
+                .card(card)
                 .build();
 
-        when(billingCycleRepository.findById(cycleId))
-                .thenReturn(Optional.of(wrongCycle));
+        when(billingCycleRepository.findById(cycleId)).thenReturn(Optional.of(wrongCycle));
 
         assertThrows(EntityNotFoundException.class,
                 () -> billingService.getBillingCycle(cardId, cycleId));

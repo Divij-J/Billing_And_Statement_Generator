@@ -1,5 +1,6 @@
 package com.example.billing_and_statement_generator.mapper;
 
+import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHistoryDTO;
 import com.example.billing_and_statement_generator.dto.statement.GenerateStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.statement.RetrieveStatementResponseDTO;
 import com.example.billing_and_statement_generator.dto.transaction.CreateTransactionResponseDTO;
@@ -63,7 +64,9 @@ public class StatementMapper {
 
     public RetrieveStatementResponseDTO toRetrieveResponseDTO(
             Statement statement,
-            List<CreateTransactionResponseDTO> transactions) {
+            List<CreateTransactionResponseDTO> transactions,
+            List<RetrievePaymentHistoryDTO> payments,
+            BigDecimal amountPaid) {
         return RetrieveStatementResponseDTO.builder()
                 .statementId(statement.getStatementId().toString())
                 .cycleId(statement.getBillingCycle().getCycleId().toString())
@@ -81,7 +84,11 @@ public class StatementMapper {
                 .cashAdvanceFee(statement.getCashAdvanceFee().toString())
                 .carryForwardBalance(statement.getCarryForwardBalance().toString())
                 .statementStatus(statement.getStatementStatus().toString())
+                .availableCredit(statement.getCard().getAvailableCredit() != null
+                        ? statement.getCard().getAvailableCredit().toString() : "0.00")
+                .amountPaid(amountPaid != null ? amountPaid.toString() : "0.00")
                 .transactions(transactions)
+                .payments(payments)
                 .build();
     }
 }
