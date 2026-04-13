@@ -67,6 +67,7 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
+    systemProperty 'pact.verifier.publishResults', 'false'
 }
 
 jacocoTestReport {
