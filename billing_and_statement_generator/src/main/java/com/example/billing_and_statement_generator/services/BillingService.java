@@ -309,6 +309,11 @@ public class BillingService {
             List<Transaction> txns,
             BigDecimal feesApplied) {
 
+        BigDecimal lateFee = txns.stream()
+                .filter(t -> t.getTransactionType() == Transaction.transactionType.LATEFEE)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal cashAdvanceFee = txns.stream()
                 .filter(t -> t.getTransactionType() == Transaction.transactionType.CASHADVANCEFEE)
                 .map(Transaction::getAmount)
@@ -333,6 +338,7 @@ public class BillingService {
                 .availableCredit(card.getAvailableCredit())
                 .transaction(buildTxnDTOs(cycle, txns))
                 .cashAdvanceFee(cashAdvanceFee)
+                .lateFee(lateFee)
                 .build();
     }
 
