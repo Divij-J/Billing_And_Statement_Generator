@@ -104,7 +104,7 @@ class TransactionServiceBDDTest {
     }
 
     @Test
-    void givenValidCashAdvance_whenCreated_thenBalanceAndFeeAreAppliedAndSaved() {
+    void givenValidCashAdvance_whenCreated_thenBalanceAreAppliedAndSaved() {
         // GIVEN
         dto.setTransactionType(Transaction.transactionType.CASHADVANCE);
 
@@ -112,15 +112,14 @@ class TransactionServiceBDDTest {
         given(transactionMapper.toEntity(dto)).willReturn(tx);
         given(cardService.applyCashAdvance(cardId, dto.getAmount()))
                 .willReturn(BigDecimal.TEN);
-        given(cardService.applyFee(eq(cardId), any(BigDecimal.class)))
-                .willReturn(BigDecimal.ONE);
 
         // WHEN
         transactionService.create(dto);
 
         // THEN
         then(cardService).should().applyCashAdvance(cardId, dto.getAmount());
-        then(cardService).should().applyFee(eq(cardId), any(BigDecimal.class));
+        then(cardService).should(never())
+                .applyFee(any(), any());
         then(transactionRepository).should().save(tx);
     }
 

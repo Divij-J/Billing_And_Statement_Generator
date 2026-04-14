@@ -122,8 +122,9 @@ class TransactionServiceTest {
     }
 
     @Test
-    void testCreateCashAdvanceSuccess() {
+    void testCreateCashAdvance_appliesBalanceOnly() {
         dto.setTransactionType(Transaction.transactionType.CASHADVANCE);
+        dto.setAmount(BigDecimal.valueOf(100));
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
         when(transactionMapper.toEntity(dto)).thenReturn(txEntity);
@@ -131,11 +132,9 @@ class TransactionServiceTest {
         when(cardService.applyCashAdvance(cardId, dto.getAmount()))
                 .thenReturn(BigDecimal.valueOf(200));
 
-        when(cardService.applyFee(eq(cardId), any(BigDecimal.class)))
-                .thenReturn(BigDecimal.valueOf(2));
-
         when(transactionRepository.save(any())).thenReturn(txEntity);
-        when(transactionMapper.toResponse(any())).thenReturn(new CreateTransactionResponseDTO());
+        when(transactionMapper.toResponse(any()))
+                .thenReturn(new CreateTransactionResponseDTO());
 
         CreateTransactionResponseDTO result = transactionService.create(dto);
 
@@ -143,10 +142,8 @@ class TransactionServiceTest {
 
         verify(cardService).applyCashAdvance(cardId, BigDecimal.valueOf(100));
 
-        BigDecimal expectedFee =
-                BigDecimal.valueOf(100).multiply(BigDecimal.valueOf(0.02));
-
-        verify(cardService).applyFee(eq(cardId), eq(expectedFee));
+        verify(cardService, never()).applyFee(any(), any());
+        verify(transactionRepository).save(txEntity);
     }
 
     @Test

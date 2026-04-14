@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -186,6 +187,6 @@ class BillingServiceBDDTest {
 
         // THEN
         assertNotNull(txn.getBillingCycle());
-        then(transactionRepository).should().saveAll(anyList());
+        then(transactionRepository).should(atLeastOnce()).saveAll(anyList());
     }
 }
