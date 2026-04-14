@@ -68,7 +68,6 @@ public class TransactionService {
                 case CASHADVANCE -> {
                     BigDecimal newBalance = cardService.applyCashAdvance(cardId, amount);
                     BigDecimal fee = amount.multiply(card.getCashAdvanceFeeRate()).setScale(2, java.math.RoundingMode.HALF_UP);
-                    createFee(cardId, fee, dto.getTransactionDate(), Transaction.transactionType.CASHADVANCEFEE);
                     log.debug("Transaction CASHADVANCE applied: cardId={}, amount={}, fee={}, newCashAdvanceBalance={}", cardId, amount, fee, newBalance);
                 }
                 default -> throw new ValidationException("Unsupported transaction type: " + dto.getTransactionType());

@@ -166,11 +166,18 @@ public class BillingService {
                 log.info("Late fee {} applied for card {}", lateFee, cardId);
             }
 
-            BigDecimal cashAdvanceFee = unbilledTxns.stream()
-                    .filter(t -> Transaction.transactionType.CASHADVANCEFEE.equals(t.getTransactionType()))
-                    .map(Transaction::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // Calculate cash advance fee for this billing cycle
+            BigDecimal cashAdvanceFee =
+                    BillingUtils.calculateCashAdvanceFee(totalCashAdvance);
 
+            if (cashAdvanceFee.compareTo(BigDecimal.ZERO) > 0) {
+                transactionService.createFee(
+                        cardId,
+                        cashAdvanceFee,   // must be 10.00 or higher
+                        cycleEndDate,
+                        Transaction.transactionType.CASHADVANCEFEE
+                );
+            }
             BigDecimal annualMembershipFee = checkAndApplyAnnualFee(
                     card, cardId, cycleStartDate, cycleEndDate);
 
@@ -201,6 +208,17 @@ public class BillingService {
                     .build();
 
             BillingCycle saved = billingCycleRepository.save(cycle);
+
+            // Attach newly created fee transactions to the billing cycle
+            List<Transaction> newlyCreatedFees =
+                    transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId)
+                            .stream()
+                            .filter(tx -> tx.getTransactionType() == Transaction.transactionType.CASHADVANCEFEE)
+                            .toList();
+
+            newlyCreatedFees.forEach(tx -> tx.setBillingCycle(saved));
+            transactionRepository.saveAll(newlyCreatedFees);
+
 
             unbilledTxns.forEach(tx -> tx.setBillingCycle(saved));
             transactionRepository.saveAll(unbilledTxns);
@@ -291,6 +309,11 @@ public class BillingService {
             List<Transaction> txns,
             BigDecimal feesApplied) {
 
+        BigDecimal cashAdvanceFee = txns.stream()
+                .filter(t -> t.getTransactionType() == Transaction.transactionType.CASHADVANCEFEE)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         Card card = cycle.getCard();
         return BillingCycleResponseDTO.builder()
                 .cycleId(cycle.getCycleId())
@@ -309,6 +332,7 @@ public class BillingService {
                 .cycleStatus(cycle.getCycleStatus())
                 .availableCredit(card.getAvailableCredit())
                 .transaction(buildTxnDTOs(cycle, txns))
+                .cashAdvanceFee(cashAdvanceFee)
                 .build();
     }
 

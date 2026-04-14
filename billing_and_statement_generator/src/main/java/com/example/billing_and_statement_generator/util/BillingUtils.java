@@ -74,4 +74,21 @@ public class BillingUtils {
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    // Calculates cash advance fee based on total cash advance amount
+    public static BigDecimal calculateCashAdvanceFee(BigDecimal totalCashAdvance) {
+        if (totalCashAdvance == null
+                || totalCashAdvance.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal percentageFee =
+                totalCashAdvance.multiply(new BigDecimal("0.05"));
+
+        BigDecimal minimumFee = new BigDecimal("10.00");
+
+        return percentageFee
+                .max(minimumFee)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
 }
