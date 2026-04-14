@@ -61,10 +61,7 @@ public class BillingService {
                 log.info("Closed previous cycle {}", previousCycle.getCycleId());
             }
 
-            LocalDate cycleStartDate = lastCycleOpt
-                    .map(c -> c.getCycleEndDate().plusDays(1))
-                    .orElse(cycleEndDate.minusDays(30));
-
+            LocalDate cycleStartDate = cycleEndDate.minusDays(30);
             LocalDate dueDate = BillingUtils.calculateDueDate(cycleEndDate);
 
             // 3. Fetch unbilled transactions
