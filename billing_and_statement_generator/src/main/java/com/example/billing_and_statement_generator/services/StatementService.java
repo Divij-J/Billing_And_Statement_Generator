@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -47,6 +48,7 @@ public class StatementService {
     private final ObjectMapper objectMapper;
 
     // POST /statements/v1/generate
+    @Transactional
     public GenerateStatementResponseDTO generateStatement(GenerateStatementRequestDTO dto) {
 
         // Validate card exists
@@ -72,10 +74,10 @@ public class StatementService {
         BigDecimal totalOutstanding = billingCycle.getTotalOutstanding();
         BigDecimal minimumDue = billingCycle.getMinimumDue();
 
+        // FIX: Use repository instead of billingCycle.getTransactions() to avoid LazyInitializationException
         List<Transaction> cycleTransactions =
-                billingCycle.getTransactions() == null
-                        ? List.of()
-                        : billingCycle.getTransactions();
+                transactionRepository.findByBillingCycleCycleId(
+                        UUID.fromString(dto.getCycleId()));
 
         BigDecimal cashAdvanceFee = calculateCashAdvanceFees(cycleTransactions);
         BigDecimal totalFeeApplied = calculateTotalFees(cycleTransactions);
@@ -104,11 +106,10 @@ public class StatementService {
         );
 
         // Fetch transactions and payments at time of generation - snapshot
-        List<CreateTransactionResponseDTO> transactions =
-                transactionRepository.findByBillingCycleCycleId(UUID.fromString(dto.getCycleId()))
-                        .stream()
-                        .map(transactionMapper::toResponse)
-                        .toList();
+        List<CreateTransactionResponseDTO> transactions = cycleTransactions
+                .stream()
+                .map(transactionMapper::toResponse)
+                .toList();
 
         List<Payment> paymentEntities =
                 paymentRepository.findByCycleId(UUID.fromString(dto.getCycleId()));
@@ -141,6 +142,7 @@ public class StatementService {
     }
 
     // POST /statements/v1/get
+    @Transactional(readOnly = true)
     public RetrieveStatementResponseDTO getStatement(UUID statementId) {
 
         Statement statement = statementRepository.findById(statementId)
@@ -160,4 +162,5 @@ public class StatementService {
 
         throw new RuntimeException("Statement snapshot not found for statementId: " + statementId);
     }
+
 }
