@@ -210,7 +210,11 @@ public class BillingService {
             List<Transaction> newlyCreatedFees =
                     transactionRepository.findByCardCardIdAndBillingCycleIsNull(cardId)
                             .stream()
-                            .filter(tx -> tx.getTransactionType() == Transaction.transactionType.CASHADVANCEFEE)
+//                            .filter(tx -> tx.getTransactionType() == Transaction.transactionType.CASHADVANCEFEE)
+                            .filter(tx ->
+                                    tx.getTransactionType() == Transaction.transactionType.CASHADVANCEFEE ||
+                                            tx.getTransactionType() == Transaction.transactionType.LATEFEE
+                            )
                             .toList();
 
             newlyCreatedFees.forEach(tx -> tx.setBillingCycle(saved));
