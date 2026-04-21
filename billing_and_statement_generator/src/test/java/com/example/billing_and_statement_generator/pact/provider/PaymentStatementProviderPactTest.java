@@ -7,6 +7,7 @@ import au.com.dius.pact.provider.junitsupport.IgnoreNoPactsToVerify;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactFolder;
+import com.example.billing_and_statement_generator.config.TestSecurityConfig;
 import com.example.billing_and_statement_generator.entity.*;
 import com.example.billing_and_statement_generator.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,22 +27,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
-
- - PROVIDER PACT TEST — PaymentService and StatementService as Providers
-
- - Verifies that our Payment and Statement endpoints satisfy the contracts
- - defined by their consumers.
-
- - WORKFLOW:
- - 1. Run consumer tests first to generate pact JSON files in build/pacts/
- - 2. Copy generated pact files to src/test/resources/pacts/
- - 3. Then run this provider test to verify your service satisfies the contract
-
- - @IgnoreNoPactsToVerify prevents test failure when no pact files exist yet.
+ * PROVIDER PACT TEST — PaymentService and StatementService as Providers
+ *
+ * Uses @Import(TestSecurityConfig.class) which permits all requests —
+ * the same config already used in other controller tests in this project.
+ * This is the cleanest way to bypass security in provider verification.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@Import(TestSecurityConfig.class)
 @Provider("PaymentServiceProvider")
 @PactFolder("src/test/resources/pacts")
 @IgnoreNoPactsToVerify
@@ -89,10 +85,8 @@ public class PaymentStatementProviderPactTest {
         cleanAll();
         Customer customer = buildAndSaveCustomer(
                 "pay.provider@example.com", "5111222333");
-
-        Card card = buildAndSaveCard(
-                customer, CARD_ID, new BigDecimal("500.00"), BigDecimal.ZERO);
-
+        Card card = buildAndSaveCard(customer, CARD_ID,
+                new BigDecimal("500.00"), BigDecimal.ZERO);
         BillingCycle cycle = buildAndSaveBillingCycle(card, CYCLE_ID);
 
         Payment payment = new Payment();
@@ -113,8 +107,8 @@ public class PaymentStatementProviderPactTest {
         cleanAll();
         Customer customer = buildAndSaveCustomer(
                 "no.pay@example.com", "5222333444");
-        buildAndSaveCard(
-                customer, CARD_ID, new BigDecimal("1000.00"), BigDecimal.ZERO);
+        buildAndSaveCard(customer, CARD_ID,
+                new BigDecimal("1000.00"), BigDecimal.ZERO);
     }
 
     @State("a card exists with balance")
@@ -123,8 +117,24 @@ public class PaymentStatementProviderPactTest {
         cleanAll();
         Customer customer = buildAndSaveCustomer(
                 "balance@example.com", "5333444555");
-        buildAndSaveCard(
-                customer, CARD_ID, new BigDecimal("1000.00"), BigDecimal.ZERO);
+        buildAndSaveCard(customer, CARD_ID,
+                new BigDecimal("1000.00"), BigDecimal.ZERO);
+    }
+
+    @State("a card exists with id")
+    @Transactional
+    public void aCardExistsWithId() {
+        cleanAll();
+        Customer customer = buildAndSaveCustomer(
+                "card.info@example.com", "5444555666");
+        buildAndSaveCard(customer, CARD_ID,
+                new BigDecimal("1000.00"), BigDecimal.ZERO);
+    }
+
+    @State("a card does not exist")
+    @Transactional
+    public void aCardDoesNotExist() {
+        cleanAll();
     }
 
     @State("a statement exists for retrieval")
@@ -132,15 +142,12 @@ public class PaymentStatementProviderPactTest {
     public void aStatementExistsForRetrieval() {
         cleanAll();
         Customer customer = buildAndSaveCustomer(
-                "stmt.provider@example.com", "5444555666");
-
-        Card card = buildAndSaveCard(
-                customer, CARD_ID, new BigDecimal("1020.00"), BigDecimal.ZERO);
-
+                "stmt.provider@example.com", "5555666777");
+        Card card = buildAndSaveCard(customer, CARD_ID,
+                new BigDecimal("1020.00"), BigDecimal.ZERO);
         BillingCycle cycle = buildAndSaveBillingCycle(card, CYCLE_ID);
 
         String snapshotJson = buildSnapshotJson();
-
         Statement statement = new Statement();
         statement.setStatementId(STATEMENT_ID);
         statement.setCard(card);
@@ -195,9 +202,8 @@ public class PaymentStatementProviderPactTest {
         return customerRepository.save(customer);
     }
 
-    private Card buildAndSaveCard(
-            Customer customer, UUID cardId, BigDecimal cardBal, BigDecimal cashBal) {
-
+    private Card buildAndSaveCard(Customer customer, UUID cardId,
+                                  BigDecimal cardBal, BigDecimal cashBal) {
         Card card = new Card();
         card.setCardId(cardId);
         card.setCustomer(customer);

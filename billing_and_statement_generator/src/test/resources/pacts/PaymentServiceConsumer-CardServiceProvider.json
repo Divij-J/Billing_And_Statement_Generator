@@ -1,0 +1,248 @@
+{
+  "consumer": {
+    "name": "PaymentServiceConsumer"
+  },
+  "interactions": [
+    {
+      "description": "PaymentService requests a non-existent card",
+      "providerStates": [
+        {
+          "name": "a card does not exist"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/cards/v1/getCardInfo"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "PaymentService requests card balance",
+      "providerStates": [
+        {
+          "name": "a card exists with balance"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/cards/v1/getCardBalanceByCardId"
+      },
+      "response": {
+        "body": {
+          "availableCredit": 4000.0,
+          "cardBalance": 1000.0,
+          "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "cashAdvanceBalance": 0.0,
+          "totalBalance": 1000.0
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.availableCredit": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.cardBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.cashAdvanceBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.totalBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "PaymentService requests card info",
+      "providerStates": [
+        {
+          "name": "a card exists with id"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/cards/v1/getCardInfo"
+      },
+      "response": {
+        "body": {
+          "active": true,
+          "availableCredit": 4000.0,
+          "cardBalance": 1000.0,
+          "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "cashAdvanceBalance": 0.0,
+          "creditLimit": 5000.0,
+          "minimumDue": 100.0
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.active": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.availableCredit": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.cardBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.cashAdvanceBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.creditLimit": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.minimumDue": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.14"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "CardServiceProvider"
+  }
+}
