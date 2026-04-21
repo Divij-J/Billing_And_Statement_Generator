@@ -8,10 +8,7 @@ import com.example.billing_and_statement_generator.entity.*;
 import com.example.billing_and_statement_generator.repository.*;
 import com.example.billing_and_statement_generator.services.PaymentService;
 import com.example.billing_and_statement_generator.services.StatementService;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.*;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +29,6 @@ public class StatementStepDefinitions {
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private TransactionRepository transactionRepository;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     // Scenario-scoped state
     private Customer customer;
     private Card card;
@@ -45,41 +39,29 @@ public class StatementStepDefinitions {
     private Exception thrownException;
     private UUID generatedStatementId;
 
-    @Before
-    @Transactional
-    public void reset() {
-        statementRepository.deleteAll();
-        paymentRepository.deleteAll();
-        transactionRepository.deleteAll();
-        billingCycleRepository.deleteAll();
-        cardRepository.deleteAll();
-        customerRepository.deleteAll();
-        generateResponse = null;
-        retrieveResponse = null;
-        thrownException = null;
-        generatedStatementId = null;
-        differentCard = null;
-        customer = null;
-        card = null;
-        billingCycle = null;
-    }
-
-// BACKGROUND STEPS
+    // -----------------------------------------------------------------------
+    // BACKGROUND STEPS
+    // -----------------------------------------------------------------------
 
     @Given("a statement customer exists in the system")
-    @Transactional
     public void aStatementCustomerExistsInTheSystem() {
         customer = new Customer();
         customer.setFirstName("Jane");
         customer.setLastName("Smith");
         customer.setEmail("stmt." + UUID.randomUUID() + "@example.com");
-        customer.setPhoneNumber("6" + (int)(Math.random() * 900000000 + 100000000));
+        customer.setPhoneNumber(generateUniquePhone());
         customer.setPhoneType(Customer.PhoneType.MOBILE);
         customer.setAddress1("456 Oak Ave");
         customer.setCity("Austin");
         customer.setState("TX");
         customer.setZipcode("73301");
         customer = customerRepository.save(customer);
+        // reset scenario state
+        generateResponse = null;
+        retrieveResponse = null;
+        thrownException = null;
+        generatedStatementId = null;
+        differentCard = null;
     }
 
     @Given("a statement card exists with a credit limit of {double}")
@@ -124,7 +106,9 @@ public class StatementStepDefinitions {
         billingCycle = billingCycleRepository.save(billingCycle);
     }
 
-// GIVEN STEPS — statement specific
+    // -----------------------------------------------------------------------
+    // GIVEN STEPS — statement specific
+    // -----------------------------------------------------------------------
 
     @Given("a statement already exists for the billing cycle")
     public void aStatementAlreadyExistsForTheBillingCycle() {
@@ -163,7 +147,9 @@ public class StatementStepDefinitions {
         paymentService.processPayment(paymentDTO);
     }
 
-// WHEN STEPS
+    // -----------------------------------------------------------------------
+    // WHEN STEPS
+    // -----------------------------------------------------------------------
 
     @When("a statement is generated for the card and billing cycle")
     public void aStatementIsGeneratedForTheCardAndBillingCycle() {
@@ -218,7 +204,9 @@ public class StatementStepDefinitions {
         }
     }
 
-// THEN STEPS
+    // -----------------------------------------------------------------------
+    // THEN STEPS
+    // -----------------------------------------------------------------------
 
     @Then("the statement should be saved successfully")
     public void theStatementShouldBeSavedSuccessfully() {
@@ -312,13 +300,15 @@ public class StatementStepDefinitions {
                         + " should be less than statement balance " + balance);
     }
 
-// HELPER
+    // -----------------------------------------------------------------------
+    // HELPERS
+    // -----------------------------------------------------------------------
 
     private Card buildCard(Customer owner, double creditLimit) {
         Card c = new Card();
         c.setCardId(UUID.randomUUID());
         c.setCustomer(owner);
-        c.setCardNumber("4" + (long)(Math.random() * 900000000000000L + 100000000000000L));
+        c.setCardNumber(generateUniqueCardNumber());
         c.setCardType(Card.CardType.CREDIT);
         c.setCardHolderName("Jane Smith");
         c.setCardIssueDate(LocalDate.now().minusYears(1));
@@ -339,4 +329,13 @@ public class StatementStepDefinitions {
         return c;
     }
 
+    private String generateUniqueCardNumber() {
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        return "4" + uuid.substring(0, 15);
+    }
+
+    private String generateUniquePhone() {
+        long nano = System.nanoTime() % 1_000_000_000L;
+        return String.format("6%09d", Math.abs(nano));
+    }
 }
