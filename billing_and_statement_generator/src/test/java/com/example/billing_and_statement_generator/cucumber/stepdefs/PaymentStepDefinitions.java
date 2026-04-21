@@ -6,7 +6,6 @@ import com.example.billing_and_statement_generator.dto.payment.RetrievePaymentHi
 import com.example.billing_and_statement_generator.entity.*;
 import com.example.billing_and_statement_generator.repository.*;
 import com.example.billing_and_statement_generator.services.PaymentService;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,8 +22,6 @@ public class PaymentStepDefinitions {
     @Autowired private CardRepository cardRepository;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private BillingCycleRepository billingCycleRepository;
-    @Autowired private PaymentRepository paymentRepository;
-    @Autowired private StatementRepository statementRepository;
 
     // Scenario-scoped state
     private Customer customer;
@@ -33,21 +30,9 @@ public class PaymentStepDefinitions {
     private PaymentResponseDTO paymentResponse;
     private Exception thrownException;
 
-    @Before
-    public void reset() {
-        statementRepository.deleteAll();
-        paymentRepository.deleteAll();
-        billingCycleRepository.deleteAll();
-        cardRepository.deleteAll();
-        customerRepository.deleteAll();
-        paymentResponse = null;
-        thrownException = null;
-        billingCycle = null;
-        customer = null;
-        card = null;
-    }
-
-// BACKGROUND STEPS — prefixed with "payment" to avoid duplicate clash
+    // -----------------------------------------------------------------------
+    // BACKGROUND STEPS
+    // -----------------------------------------------------------------------
 
     @Given("a payment customer exists in the system")
     public void aPaymentCustomerExistsInTheSystem() {
@@ -55,13 +40,17 @@ public class PaymentStepDefinitions {
         customer.setFirstName("John");
         customer.setLastName("Doe");
         customer.setEmail("pay." + UUID.randomUUID() + "@example.com");
-        customer.setPhoneNumber("5" + (int)(Math.random() * 900000000 + 100000000));
+        customer.setPhoneNumber(generateUniquePhone());
         customer.setPhoneType(Customer.PhoneType.MOBILE);
         customer.setAddress1("123 Main St");
         customer.setCity("Chicago");
         customer.setState("IL");
         customer.setZipcode("60601");
         customer = customerRepository.save(customer);
+        // reset scenario state
+        paymentResponse = null;
+        thrownException = null;
+        billingCycle = null;
     }
 
     @Given("a payment card exists with a credit limit of {double}")
@@ -87,7 +76,9 @@ public class PaymentStepDefinitions {
         card = cardRepository.save(card);
     }
 
-// WHEN STEPS
+    // -----------------------------------------------------------------------
+    // WHEN STEPS
+    // -----------------------------------------------------------------------
 
     @When("a payment of {double} is made using {word} method")
     public void aPaymentOfIsMadeUsingMethod(double amount, String method) {
@@ -108,7 +99,9 @@ public class PaymentStepDefinitions {
         }
     }
 
-// THEN STEPS
+    // -----------------------------------------------------------------------
+    // THEN STEPS
+    // -----------------------------------------------------------------------
 
     @Then("the payment should be saved successfully")
     public void thePaymentShouldBeSavedSuccessfully() {
@@ -175,11 +168,12 @@ public class PaymentStepDefinitions {
         assertFalse(history.isEmpty(), "Payment history should not be empty");
         BigDecimal actual = new BigDecimal(history.get(0).getAmountPaid());
         assertEquals(0, BigDecimal.valueOf(expectedAmount).compareTo(actual),
-                "Payment history amount mismatch. Expected: " + expectedAmount
-                        + " but was: " + actual);
+                "Payment history amount mismatch");
     }
 
-// HELPER
+    // -----------------------------------------------------------------------
+    // HELPERS
+    // -----------------------------------------------------------------------
 
     private void createDefaultBillingCycle() {
         BillingCycle cycle = new BillingCycle();
@@ -205,7 +199,7 @@ public class PaymentStepDefinitions {
         Card c = new Card();
         c.setCardId(UUID.randomUUID());
         c.setCustomer(owner);
-        c.setCardNumber("4" + (long)(Math.random() * 900000000000000L + 100000000000000L));
+        c.setCardNumber(generateUniqueCardNumber());
         c.setCardType(Card.CardType.CREDIT);
         c.setCardHolderName("John Doe");
         c.setCardIssueDate(LocalDate.now().minusYears(1));
@@ -226,4 +220,15 @@ public class PaymentStepDefinitions {
         return c;
     }
 
+    // Generates a unique 16-digit card number using UUID to avoid collisions
+    private String generateUniqueCardNumber() {
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        return "4" + uuid.substring(0, 15);
+    }
+
+    // Generates a unique phone number using current time nanos
+    private String generateUniquePhone() {
+        long nano = System.nanoTime() % 1_000_000_000L;
+        return String.format("5%09d", Math.abs(nano));
+    }
 }
