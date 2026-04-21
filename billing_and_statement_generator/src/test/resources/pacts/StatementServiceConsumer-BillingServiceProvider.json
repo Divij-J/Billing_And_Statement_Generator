@@ -1,0 +1,244 @@
+{
+  "consumer": {
+    "name": "StatementServiceConsumer"
+  },
+  "interactions": [
+    {
+      "description": "StatementService requests a non-existent billing cycle",
+      "providerStates": [
+        {
+          "name": "a billing cycle does not exist"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "b1c2d3e4-f5a6-7890-bcde-fa1234567890",
+          "cycleId": "c1d2e3f4-a5b6-7890-cdef-ab1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.cycleId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/billing/v1/GetBillingCycleByCardAndCycleId"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "StatementService requests billing cycle details",
+      "providerStates": [
+        {
+          "name": "a billing cycle exists for the card"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "b1c2d3e4-f5a6-7890-bcde-fa1234567890",
+          "cycleId": "c1d2e3f4-a5b6-7890-cdef-ab1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.cycleId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/billing/v1/GetBillingCycleByCardAndCycleId"
+      },
+      "response": {
+        "body": {
+          "cardId": "b1c2d3e4-f5a6-7890-bcde-fa1234567890",
+          "cycleEndDate": "2000-01-31",
+          "cycleId": "c1d2e3f4-a5b6-7890-cdef-ab1234567890",
+          "cycleStartDate": "2000-01-31",
+          "cycleStatus": "OPEN",
+          "dueDate": "2000-01-31",
+          "feesApplied": 0.0,
+          "minimumDue": 100.0,
+          "totalCashAdvance": 0.0,
+          "totalInterest": 20.0,
+          "totalOutstanding": 1020.0,
+          "totalPurchases": 1000.0
+        },
+        "generators": {
+          "body": {
+            "$.cycleEndDate": {
+              "format": "yyyy-MM-dd",
+              "type": "Date"
+            },
+            "$.cycleStartDate": {
+              "format": "yyyy-MM-dd",
+              "type": "Date"
+            },
+            "$.dueDate": {
+              "format": "yyyy-MM-dd",
+              "type": "Date"
+            }
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.cycleEndDate": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "format": "yyyy-MM-dd",
+                  "match": "date"
+                }
+              ]
+            },
+            "$.cycleId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.cycleStartDate": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "format": "yyyy-MM-dd",
+                  "match": "date"
+                }
+              ]
+            },
+            "$.cycleStatus": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.dueDate": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "format": "yyyy-MM-dd",
+                  "match": "date"
+                }
+              ]
+            },
+            "$.feesApplied": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.minimumDue": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.totalCashAdvance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.totalInterest": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.totalOutstanding": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            },
+            "$.totalPurchases": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "decimal"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.14"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "BillingServiceProvider"
+  }
+}

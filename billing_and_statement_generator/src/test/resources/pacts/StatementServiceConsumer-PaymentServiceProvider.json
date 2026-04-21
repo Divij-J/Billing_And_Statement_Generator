@@ -1,0 +1,165 @@
+{
+  "consumer": {
+    "name": "StatementServiceConsumer"
+  },
+  "interactions": [
+    {
+      "description": "StatementService requests payment history when none exist",
+      "providerStates": [
+        {
+          "name": "no payments exist for a card"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "d1e2f3a4-b5c6-7890-defa-bc1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/payments/v1/history"
+      },
+      "response": {
+        "body": [
+
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "StatementService requests payment history",
+      "providerStates": [
+        {
+          "name": "payments exist for a card"
+        }
+      ],
+      "request": {
+        "body": {
+          "cardId": "d1e2f3a4-b5c6-7890-defa-bc1234567890"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/payments/v1/history"
+      },
+      "response": {
+        "body": [
+          {
+            "amountPaid": "500.00",
+            "cardId": "d1e2f3a4-b5c6-7890-defa-bc1234567890",
+            "cycleId": "e1f2a3b4-c5d6-7890-efab-cd1234567890",
+            "paymentId": "f1a2b3c4-d5e6-7890-fabc-de1234567890",
+            "paymentMethod": "ONLINE",
+            "paymentStatus": "SUCCESS",
+            "paymentType": "PARTIAL"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$[0].amountPaid": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$[0].cardId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$[0].cycleId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$[0].paymentId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$[0].paymentMethod": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$[0].paymentStatus": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$[0].paymentType": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.14"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "PaymentServiceProvider"
+  }
+}
