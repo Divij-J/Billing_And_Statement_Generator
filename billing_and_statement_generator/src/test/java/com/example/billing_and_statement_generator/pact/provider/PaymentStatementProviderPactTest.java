@@ -190,6 +190,7 @@ public class PaymentStatementProviderPactTest {
 
     private Customer buildAndSaveCustomer(String email, String phone) {
         Customer customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("Test");
         customer.setLastName("User");
         customer.setEmail(email);

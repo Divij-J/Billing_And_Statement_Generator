@@ -75,7 +75,6 @@ public class CustomerBillingProviderPactTest {
      * given("customer exists")
      */
     @State("customer exists")
-    @Transactional
     public void customerExists() {
         cleanAll();
 
@@ -91,7 +90,33 @@ public class CustomerBillingProviderPactTest {
         customer.setState("IL");
         customer.setZipcode("60601");
 
-        customerRepository.save(customer);
+//        customerRepository.save(customer);
+        customerRepository.saveAndFlush(customer);
+    }
+
+    @State("customer exists with id")
+    public void customerExistsWithId() {
+        cleanAll();
+
+        Customer customer = new Customer();
+        customer.setCustomerId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+        customer.setFirstName("Jane");
+        customer.setLastName("Doe");
+        customer.setEmail("jane.doe@test.com");
+        customer.setPhoneNumber("1234567890");
+        customer.setPhoneType(Customer.PhoneType.MOBILE);
+        customer.setAddress1("123 Main St");
+        customer.setCity("Chicago");
+        customer.setState("IL");
+        customer.setZipcode("60601");
+
+        customerRepository.saveAndFlush(customer);
+
+        System.out.println(
+                "TEST DEBUG: customer exists? " +
+                        customerRepository.findById(customer.getCustomerId()).isPresent()
+        );
+
     }
 
     /**
@@ -99,7 +124,6 @@ public class CustomerBillingProviderPactTest {
      * given("customer does not exist")
      */
     @State("customer does not exist")
-    @Transactional
     public void customerDoesNotExist() {
         cleanAll();
         // No-op: repository intentionally empty

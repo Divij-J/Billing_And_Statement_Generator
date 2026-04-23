@@ -43,7 +43,7 @@ public class CustomerConsumerPactTest {
         return builder
                 .given("customer does not exist")
                 .uponReceiving("BillingService creates a customer")
-                .path("/api/customers")
+                .path("/api/customers/createCustomer")
                 .method("POST")
                 .headers("Content-Type", "application/json")
                 .body(new PactDslJsonBody()
@@ -92,7 +92,7 @@ public class CustomerConsumerPactTest {
         HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                mockServer.getUrl() + "/api/customers",
+                mockServer.getUrl() + "/api/customers/createCustomer",
                 HttpMethod.POST,
                 entity,
                 String.class
@@ -113,8 +113,11 @@ public class CustomerConsumerPactTest {
         return builder
                 .given("customer exists with id")
                 .uponReceiving("BillingService retrieves a customer by id")
-                .path("/api/customers/" + CUSTOMER_ID)
-                .method("GET")
+                .path("/api/customers/getCustomerById")
+                .method("POST")
+                .headers("Content-Type", "application/json")
+                .body(new PactDslJsonBody()
+                        .uuid("customerId", UUID.fromString(CUSTOMER_ID)))
                 .willRespondWith()
                 .status(200)
                 .headers(Map.of("Content-Type", "application/json"))
@@ -124,8 +127,7 @@ public class CustomerConsumerPactTest {
                         .stringType("lastName", "Doe")
                         .stringType("email", "jane.doe@test.com")
                         .stringType("phoneNumber", "1234567890")
-                        .stringType("phoneType", "MOBILE")
-                )
+                        .stringType("phoneType", "MOBILE"))
                 .toPact();
     }
 
@@ -134,10 +136,16 @@ public class CustomerConsumerPactTest {
     void testGetCustomerById(MockServer mockServer) {
         RestTemplate restTemplate = new RestTemplate();
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String body = "{ \"customerId\": \"" + CUSTOMER_ID + "\" }";
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
         ResponseEntity<String> response = restTemplate.exchange(
-                mockServer.getUrl() + "/api/customers/" + CUSTOMER_ID,
-                HttpMethod.GET,
-                null,
+                mockServer.getUrl() + "/api/customers/getCustomerById",
+                HttpMethod.POST,
+                entity,
                 String.class
         );
 
@@ -156,8 +164,11 @@ public class CustomerConsumerPactTest {
         return builder
                 .given("customer does not exist")
                 .uponReceiving("BillingService retrieves a non-existent customer")
-                .path("/api/customers/" + CUSTOMER_ID)
-                .method("GET")
+                .path("/api/customers/getCustomerById")
+                .method("POST")
+                .headers("Content-Type", "application/json")
+                .body(new PactDslJsonBody()
+                        .uuid("customerId", UUID.fromString(CUSTOMER_ID)))
                 .willRespondWith()
                 .status(404)
                 .toPact();
@@ -168,11 +179,17 @@ public class CustomerConsumerPactTest {
     void testGetCustomerNotFound(MockServer mockServer) {
         RestTemplate restTemplate = new RestTemplate();
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String body = "{ \"customerId\": \"" + CUSTOMER_ID + "\" }";
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
         try {
             restTemplate.exchange(
-                    mockServer.getUrl() + "/api/customers/" + CUSTOMER_ID,
-                    HttpMethod.GET,
-                    null,
+                    mockServer.getUrl() + "/api/customers/getCustomerById",
+                    HttpMethod.POST,
+                    entity,
                     String.class
             );
             fail("Expected 404 when customer not found");
