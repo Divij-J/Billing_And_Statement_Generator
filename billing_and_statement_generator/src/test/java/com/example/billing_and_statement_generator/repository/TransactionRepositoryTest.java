@@ -35,6 +35,7 @@ class TransactionRepositoryTest {
     @BeforeEach
     void setup() {
         customer = Customer.builder()
+                .customerId(UUID.randomUUID())
                 .firstName("John")
                 .lastName("Doe")
                 .middleInitial("A")

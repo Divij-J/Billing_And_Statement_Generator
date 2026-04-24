@@ -29,6 +29,7 @@ public class CardRepositoryTest {
     @BeforeEach
     void init(){
         customer = Customer.builder()
+                    .customerId(UUID.randomUUID())
                     .firstName("John")
                     .lastName("Doe")
                     .middleInitial("A")

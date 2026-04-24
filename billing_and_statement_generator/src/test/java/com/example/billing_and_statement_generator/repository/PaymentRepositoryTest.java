@@ -40,6 +40,7 @@ class PaymentRepositoryTest {
                                       Payment.PaymentStatus status) {
 
         Customer customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("John");
         customer.setLastName("Doe");
         customer.setEmail(email);

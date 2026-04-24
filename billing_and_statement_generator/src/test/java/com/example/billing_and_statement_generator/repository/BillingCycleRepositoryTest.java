@@ -36,6 +36,7 @@ class BillingCycleRepositoryTest {
     void setup() {
         // ---- Create Customer
         Customer customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("John");
         customer.setLastName("Doe");
         customer.setMiddleInitial("A");

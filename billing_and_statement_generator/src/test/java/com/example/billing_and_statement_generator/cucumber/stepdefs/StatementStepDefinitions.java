@@ -46,6 +46,7 @@ public class StatementStepDefinitions {
     @Given("a statement customer exists in the system")
     public void aStatementCustomerExistsInTheSystem() {
         customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("Jane");
         customer.setLastName("Smith");
         customer.setEmail("stmt." + UUID.randomUUID() + "@example.com");

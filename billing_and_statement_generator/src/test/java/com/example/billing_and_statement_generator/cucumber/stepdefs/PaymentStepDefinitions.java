@@ -37,6 +37,7 @@ public class PaymentStepDefinitions {
     @Given("a payment customer exists in the system")
     public void aPaymentCustomerExistsInTheSystem() {
         customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("John");
         customer.setLastName("Doe");
         customer.setEmail("pay." + UUID.randomUUID() + "@example.com");

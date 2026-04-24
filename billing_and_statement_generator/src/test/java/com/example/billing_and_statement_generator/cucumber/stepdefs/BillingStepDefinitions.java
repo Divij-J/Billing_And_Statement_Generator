@@ -47,6 +47,7 @@ public class BillingStepDefinitions {
     @Given("a billing customer exists")
     public void billingCustomerExists() {
         customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("Jane");
         customer.setLastName("Doe");
         customer.setEmail("bill." + UUID.randomUUID() + "@example.com");

@@ -55,6 +55,7 @@ public class CustomerStepDefinitions {
     @Given("a customer exists in the system")
     public void aCustomerExistsInTheSystem() {
         Customer customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("John");
         customer.setLastName("Doe");
         customer.setEmail("existing." + UUID.randomUUID() + "@example.com");

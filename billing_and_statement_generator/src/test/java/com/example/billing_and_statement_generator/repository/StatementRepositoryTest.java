@@ -37,6 +37,7 @@ class StatementRepositoryTest {
     private Statement createTestStatement(String email, String phone) {
 
         Customer customer = new Customer();
+        customer.setCustomerId(UUID.randomUUID());
         customer.setFirstName("John");
         customer.setLastName("Doe");
         customer.setEmail(email);
